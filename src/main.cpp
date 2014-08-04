@@ -4,15 +4,32 @@
 #include <cstring>
 #include <exception>
 #include <limits>
+#if _MSC_VER
+#include "msinttypes/stdint.h"
+#else
 #include <stdint.h>
+#endif
 #include <stdlib.h>
 #include "resultfilename.h"
 #include "timer.h"
 #include "test.h"
 
+class Random {
+public:
+	Random(unsigned seed = 0) : mSeed(seed) {}
+
+	unsigned operator()() {
+		mSeed = 214013 * mSeed + 2531011;
+		return mSeed;
+	}
+
+private:
+	unsigned mSeed;
+};
+
 static void VerifyValue(double value, void(*f)(double, char*), const char* fname) {
 	char buffer[1024];
-	printf("%.17g\n", value);
+	//printf("%.17g\n", value);
 
 	f(value, buffer);
 	char* end;
@@ -30,7 +47,7 @@ static void VerifyValue(double value, void(*f)(double, char*), const char* fname
 static void Verify(void(*f)(double, char*), const char* fname) {
 	printf("Verifying %s ... ", fname);
 
-	// Boundary cases
+	// Boundary and simple cases
 	VerifyValue(0, f, fname);
 	VerifyValue(1.0 / 3.0, f, fname);
 	VerifyValue(2.0 / 3.0, f, fname);
@@ -39,20 +56,20 @@ static void Verify(void(*f)(double, char*), const char* fname) {
 	VerifyValue(std::numeric_limits<double>::min(), f, fname);
 	VerifyValue(std::numeric_limits<double>::max(), f, fname);
 
-	//// 2^n - 1, 2^n, 10^n - 1, 10^n until overflow
-	//for (uint32_t power = 2; power <= 10; power += 8) {
-	//	T i = 1, last;
-	//	do {
-	//		VerifyValue<T>(i - 1, f, g, fname, gname);
-	//		VerifyValue<T>(i, f, g, fname, gname);
-	//		if (std::numeric_limits<T>::min() < 0) {
-	//			VerifyValue<T>(Traits<T>::Negate(i), f, g, fname, gname);
-	//			VerifyValue<T>(Traits<T>::Negate(i + 1), f, g, fname, gname);
-	//		}
-	//		last = i;
-	//		i *= power;
-	//	} while (last < i);
-	//}
+	Random r;
+	union {
+		double d;
+		uint64_t u;
+	}u;
+
+	for (int i = 0; i < 100000; i++) {
+		do {
+			// Need to call r() in two statements for cross-platform coherent sequence.
+			u.u = uint64_t(r()) << 32;
+			u.u |= uint64_t(r());
+		} while (isnan(u.d) || isinf(u.d));
+		VerifyValue(u.d, f, fname);
+	}
 
 	printf("OK\n");
 }
