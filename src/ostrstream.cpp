@@ -1,31 +1,13 @@
-#ifdef _MSC_VER
-#include "msinttypes/inttypes.h"
-#else
-#include <inttypes.h>
-#endif
+#include <iomanip>
 #include <strstream>
 #include "test.h"
 
-void u32toa_ostrstream(uint32_t value, char* buffer) {
-	std::ostrstream oss(buffer, 11);
-	oss << value << std::ends;
+void dtoa_ostrstream(double value, char* buffer) {
+	std::ostrstream oss(buffer, 25);
+	oss << std::setprecision(17) << value << std::ends;
+	strcpy(buffer, oss.str());
 }
 
-void i32toa_ostrstream(int32_t value, char* buffer) {
-	std::ostrstream oss(buffer, 12);
-	oss << value << std::ends;
-}
-
-void u64toa_ostrstream(uint64_t value, char* buffer) {
-	std::ostrstream oss(buffer, 21);
-	oss << value << std::ends;
-}
-
-void i64toa_ostrstream(int64_t value, char* buffer) {
-	std::ostrstream oss(buffer, 22);
-	oss << value << std::ends;
-}
-
-#if RUN_CPPITOA
+//#if RUN_CPPITOA
 REGISTER_TEST(ostrstream);
-#endif
+//#endif
