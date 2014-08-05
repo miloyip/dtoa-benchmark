@@ -13,6 +13,7 @@
 #include "resultfilename.h"
 #include "timer.h"
 #include "test.h"
+#include "double-conversion/double-conversion.h"
 
 class Random {
 public:
@@ -32,9 +33,20 @@ static void VerifyValue(double value, void(*f)(double, char*), const char* fname
 	//printf("%.17g\n", value);
 
 	f(value, buffer);
+
+#if 0
 	char* end;
 	double roundtrip = strtod(buffer, &end);
-	if (strlen(buffer) != size_t(end - buffer)) {
+	int processed = int(end - buffer);
+#else
+	// double-conversion returns correct result.
+	using namespace double_conversion;
+	StringToDoubleConverter converter(StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
+	int processed = 0;
+	double roundtrip = converter.StringToDouble(buffer, 1024, &processed);
+#endif
+
+	if (strlen(buffer) != (size_t)processed) {
 		printf("Error: some extra character %g -> '%s'\n", value, buffer);
 		throw std::exception();
 	}
