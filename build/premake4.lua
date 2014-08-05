@@ -53,6 +53,7 @@ solution "benchmark"
 		files { 
 			"../src/**.h",
 			"../src/**.cpp",
+			"../src/**.cc",
 			"../src/**.c",
 		}
 
