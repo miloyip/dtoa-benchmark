@@ -26,6 +26,8 @@
 #include "prettify.h"
 #include "fast_exponent.h"
 
+#define HUMAN_READABLE
+
 void grisu2(double v, char* buffer, int* length, int* K);
 
 void fill_double_init() {}
