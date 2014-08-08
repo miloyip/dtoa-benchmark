@@ -8,4 +8,4 @@ void dtoa_gay(double value, char* buffer) {
 	g_fmt(buffer, value);
 }
 
-REGISTER_TEST(gay);
+//REGISTER_TEST(gay);
