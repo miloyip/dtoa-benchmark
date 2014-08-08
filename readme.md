@@ -79,7 +79,9 @@ milo          | [miloyip](https://github.com/miloyip)'s Grisu2 C++ header-only i
 null          | Do nothing.
 
 Notes:
+
 1. `tostring()` is not tested as it does not fulfill the roundtrip requirement.
+
 2. Grisu2 is chosen because it can generate better human-readable number and >99.9% of results are in shortest. Grisu3 needs another `dtoa()` implementation for not meeting the shortest requirement.
 
 ## FAQ
