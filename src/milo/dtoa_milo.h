@@ -239,7 +239,7 @@ inline void DigitGen(const DiyFp& W, const DiyFp& Mp, uint64_t delta, char* buff
 	const DiyFp wp_w = Mp - W;
 	uint32_t p1 = static_cast<uint32_t>(Mp.f >> -one.e);
 	uint64_t p2 = Mp.f & (one.f - 1);
-	uint32_t kappa = CountDecimalDigit32(p1);
+	int kappa = static_cast<int>(CountDecimalDigit32(p1));
 	*len = 0;
 
 	while (kappa > 0) {
@@ -254,7 +254,7 @@ inline void DigitGen(const DiyFp& W, const DiyFp& Mp, uint64_t delta, char* buff
 			case  4: d = p1 /       1000; p1 %=       1000; break;
 			case  3: d = p1 /        100; p1 %=        100; break;
 			case  2: d = p1 /         10; p1 %=         10; break;
-			case  1: d = p1; break;
+			case  1: d = p1;              p1 =           0; break;
 			default: 
 #if defined(_MSC_VER)
 				__assume(0);
