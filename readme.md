@@ -74,8 +74,8 @@ sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
 [gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation.
 [grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0)        | Florian Loitsch's Grisu2 C implementation [1].
 [doubleconv](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
-[fpconv]()        | @night-shift 's  Grisu2 C implementation.
-milo          | @miloyip 's Grisu2 C++ header-only implementation.
+[fpconv](https://github.com/night-shift/fpconv)        | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
+milo          | [miloyip](https://github.com/miloyip)'s Grisu2 C++ header-only implementation.
 null          | Do nothing.
 
 Notes:
@@ -90,7 +90,7 @@ Notes:
 
    Making pull request of new implementations is welcome.
 
-2. Why not converting integers to `std::string`?
+2. Why not converting `double` to `std::string`?
 
    It may introduce heap allocation, which is a big overhead. User can easily wrap these low-level functions to return `std::string`, if needed.
 
