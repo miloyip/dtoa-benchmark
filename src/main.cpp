@@ -335,7 +335,7 @@ void BenchAll() {
 	else
 		fp = fopen(RESULT_FILENAME, "w");
 
-	fprintf(fp, "doubleype,Function,Digit,doubleime(ms)\n");
+	fprintf(fp, "Type,Function,Digit,Time(ns)\n");
 
 	const TestList& tests = TestManager::Instance().GetTests();
 
