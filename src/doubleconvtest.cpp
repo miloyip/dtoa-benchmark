@@ -4,7 +4,7 @@
 using namespace double_conversion;
 
 void dtoa_doubleconv(double value, char* buffer) {
-	StringBuilder sb(buffer, 25);
+	StringBuilder sb(buffer, 26);
 	DoubleToStringConverter::EcmaScriptConverter().ToShortest(value, &sb);
 }
 

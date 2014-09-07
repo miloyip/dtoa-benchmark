@@ -1,5 +1,6 @@
 #pragma once
 #include <assert.h>
+#include <math.h>
 
 #if defined(_MSC_VER)
 #include "msinttypes/stdint.h"
