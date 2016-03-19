@@ -48,7 +48,7 @@ static diy_fp_t minus(diy_fp_t x, diy_fp_t y) {
 */
 
 static diy_fp_t multiply(diy_fp_t x, diy_fp_t y) {
-    uint64_t a,b,c,d,ac,bc,ad,bd,tmp,h;
+    uint64_t a,b,c,d,ac,bc,ad,bd,tmp;
   diy_fp_t r; uint64_t M32 = 0xFFFFFFFF;
   a = x.f >> 32; b = x.f & M32;
   c = y.f >> 32; d = y.f & M32;
