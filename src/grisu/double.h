@@ -110,7 +110,7 @@ static void normalized_boundaries(double d, diy_fp_t* out_m_minus, diy_fp_t* out
     *out_m_minus = mi;
 }
 
-static double random_double() {
+static inline double random_double() {
     uint64_t tmp = 0;
     int i;
     for (i = 0; i < 8; i++) {
