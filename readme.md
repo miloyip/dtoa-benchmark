@@ -71,6 +71,7 @@ Function      | Description
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
 ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)`.
 sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
+[stb_sprintf](https://github.com/nothings/stb)   | fast sprintf replacement with `"%.17g"` format.
 [gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation.
 [grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0)        | Florian Loitsch's Grisu2 C implementation [1].
 [doubleconv](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
