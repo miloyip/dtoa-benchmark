@@ -1,0 +1,22 @@
+language: cpp
+sudo: required
+dist: trusty
+
+compiler:
+  - gcc
+  - clang
+
+os:
+  - linux
+
+script: >
+  cmake --version &&
+  cmake . &&
+  (if which clang-format-6.0 > /dev/null && make reformat && [[ -n $(git diff) ]];
+    then
+      echo "You must run 'make reformat' before submitting a pull request";
+      echo "";
+      git diff;
+      exit -1;
+    fi) &&
+  make --keep-going all && make --keep-going test;

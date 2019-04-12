@@ -1,0 +1,71 @@
+version: 0.0.0.{build}
+
+environment:
+  GTEST_SHUFFLE: 1
+  GTEST_RUNTIME_LIMIT: 142
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CMAKE_GENERATOR: Visual Studio 15 2017
+      TOOLSET: v141
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      CMAKE_GENERATOR: Visual Studio 14 2015
+      TOOLSET: v140
+
+branches:
+  except:
+    - coverity_scan
+
+configuration:
+- Debug
+- Release
+
+platform:
+- x86
+- x64
+
+artifacts:
+  - path: '_build/Testing/Temporary/*'
+    name: test_results
+
+install:
+- git submodule sync
+- git fetch --tags --prune
+- git submodule update --init --recursive
+- git submodule foreach --recursive git fetch --tags --prune
+- cmake --version
+
+before_build:
+- ps: |
+    Write-Output "*******************************************************************************"
+    Write-Output "Configuration: $env:CONFIGURATION"
+    Write-Output "Platform: $env:PLATFORM"
+    $generator = $env:CMAKE_GENERATOR
+    if ($env:PLATFORM -eq "x64") {
+        $generator = "$generator Win64"
+    }
+    Write-Output "Toolchain: $generator ($env:TOOLSET)"
+    Write-Output "*******************************************************************************"
+
+build_script:
+- ps: |
+    md _build -Force | Out-Null
+    cd _build
+
+    & cmake -G "$generator" -DCMAKE_CONFIGURATION_TYPES="Debug;Release" ..
+    if ($LastExitCode -ne 0) {
+        throw "Exec: $ErrorMessage"
+    }
+    Write-Output "*******************************************************************************"
+
+    & cmake --build . --config $env:CONFIGURATION
+    if ($LastExitCode -ne 0) {
+        throw "Exec: $ErrorMessage"
+    }
+    Write-Output "*******************************************************************************"
+
+test_script:
+- ps: |
+    & ctest -C $env:CONFIGURATION --output-on-failure
+    if ($LastExitCode -ne 0) {
+        throw "Exec: $ErrorMessage"
+    }
