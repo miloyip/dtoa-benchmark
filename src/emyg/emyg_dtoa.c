@@ -32,11 +32,9 @@
 #include <math.h>
 
 #if defined(_MSC_VER)
-#include "msinttypes/stdint.h"
 #include <intrin.h>
-#else
-#include <stdint.h>
 #endif
+#include <stdint.h>
 
 #include <string.h>
 
@@ -97,14 +95,14 @@ static inline DiyFp DiyFp_multiply (const DiyFp lhs, const DiyFp rhs) {
 #if defined(_MSC_VER) && defined(_M_AMD64)
 	uint64_t h;
 	uint64_t l = _umul128(lhs.f, rhs.f, &h);
-	if (l & (uint64_t(1) << 63)) // rounding
+	if (l & (UINT64_C(1) << 63)) // rounding
 		h++;
-	return DiyFp_fro_parts(h, lhs.e + rhs.e + 64);
+	return DiyFp_from_parts(h, lhs.e + rhs.e + 64);
 #elif defined(__SIZEOF_INT128__) || (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
 	unsigned __int128 p = (unsigned __int128 )(lhs.f) * (unsigned __int128 )(rhs.f);
 	uint64_t h = p >> 64;
 	uint64_t l = (uint64_t )(p);
-	if (l & ((uint64_t )1u << 63)) // rounding
+	if (l & (UINT64_C(1) << 63)) // rounding
 		h++;
 	return DiyFp_from_parts(h, lhs.e + rhs.e + 64);
 #else

@@ -1,6 +1,4 @@
-﻿#if __cplusplus >= 201103L
-
-#include "test.h"
+﻿#include "test.h"
 #include "erthink/erthink_d2a.h"
 
 void dtoa_erthink(double v, char* buffer)
@@ -9,5 +7,3 @@ void dtoa_erthink(double v, char* buffer)
 }
 
 REGISTER_TEST(erthink);
-
-#endif
