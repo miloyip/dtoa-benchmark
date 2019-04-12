@@ -100,7 +100,7 @@ static inline DiyFp DiyFp_multiply (const DiyFp lhs, const DiyFp rhs) {
 	if (l & (uint64_t(1) << 63)) // rounding
 		h++;
 	return DiyFp_fro_parts(h, lhs.e + rhs.e + 64);
-#elif ((__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __clang_major__ >= 9) && defined(__x86_64__))
+#elif defined(__SIZEOF_INT128__) || (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
 	unsigned __int128 p = (unsigned __int128 )(lhs.f) * (unsigned __int128 )(rhs.f);
 	uint64_t h = p >> 64;
 	uint64_t l = (uint64_t )(p);
