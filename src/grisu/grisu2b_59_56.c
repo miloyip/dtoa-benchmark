@@ -81,7 +81,7 @@ void digit_gen(diy_fp_t W, diy_fp_t Mp, diy_fp_t delta,
 
 void grisu2(double v, char* buffer, int* length, int* K) {
   diy_fp_t w_m, w_p;
-  int q = 64, alpha = -59, gamma = -56; int pos;
+  int q = 64, alpha = -59, gamma = -56;
   normalized_boundaries(v, &w_m, &w_p);
   diy_fp_t w = normalize_diy_fp(double2diy_fp(v));
   int mk = k_comp(w_p.e + q, alpha, gamma);

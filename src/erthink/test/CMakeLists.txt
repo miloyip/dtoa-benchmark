@@ -1,0 +1,29 @@
+﻿include_directories(${UT_INCLUDE_DIRECTORIES})
+
+if(BUILD_SHARED_LIBS)
+  add_definitions("-DGTEST_LINKED_AS_SHARED_LIBRARY=1")
+endif()
+
+# LY: reduce compilation time (significantly on Elbrus)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
+    AND NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION AND NOT LTO_ENABLED)
+  if (CC_HAS_OMINIMAL)
+    add_compile_options("-Ominimal")
+  elseif(CMAKE_COMPILER_IS_CLANG OR CMAKE_COMPILER_IS_GNUCC)
+    add_compile_options("-O1")
+  endif()
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(ops_timeout 120)
+  set(u2a_timeout 120)
+  set(d2a_timeout 120)
+else()
+  set(trivia_timeout 30)
+  set(u2a_timeout 30)
+  set(d2a_timeout 30)
+endif()
+
+add_ut(erthink_ops TIMEOUT ${ops_timeout} SOURCE testing.h ops.cxx LIBRARY erthink)
+add_ut(erthink_u2a TIMEOUT ${u2a_timeout} SOURCE testing.h u2a.cxx LIBRARY erthink)
+add_ut(erthink_d2a TIMEOUT ${d2a_timeout} SOURCE testing.h d2a.cxx LIBRARY erthink)

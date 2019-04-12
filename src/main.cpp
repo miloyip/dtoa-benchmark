@@ -34,27 +34,15 @@ private:
 	unsigned mSeed;
 };
 
-static size_t VerifyValue(double value, void(*f)(double, char*), const char* expect = 0) {
+static size_t VerifyValue(double value, void(*f)(double, char*)) {
 	char buffer[1024];
 	f(value, buffer);
 
-	//printf("%.17g -> %s\n", value, buffer);
-	if (expect && strcmp(buffer, expect) != 0) {
-		printf("Error: expect %s but actual %s\n", expect, buffer);
-		//throw std::exception();
-	}
-
-#if 0
-	char* end;
-	double roundtrip = strtod(buffer, &end);
-	int processed = int(end - buffer);
-#else
 	// double-conversion returns correct result.
 	using namespace double_conversion;
 	StringToDoubleConverter converter(StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
 	int processed = 0;
 	double roundtrip = converter.StringToDouble(buffer, 1024, &processed);
-#endif
 
 	size_t len = strlen(buffer);
 	if (len != (size_t)processed) {
@@ -74,11 +62,11 @@ static void Verify(void(*f)(double, char*), const char* fname) {
 
 	// Boundary and simple cases
 	VerifyValue(0, f);
-	VerifyValue(0.1, f, "0.1");
-	VerifyValue(0.12, f, "0.12");
-	VerifyValue(0.123, f, "0.123");
-	VerifyValue(0.1234, f, "0.1234");
-	VerifyValue(1.2345, f, "1.2345");
+	VerifyValue(0.1, f);
+	VerifyValue(0.12, f);
+	VerifyValue(0.123, f);
+	VerifyValue(0.1234, f);
+	VerifyValue(1.2345, f);
 	VerifyValue(1.0 / 3.0, f);
 	VerifyValue(2.0 / 3.0, f);
 	VerifyValue(10.0 / 3.0, f);
@@ -130,6 +118,8 @@ void BenchSequential(void(*f)(double, char*), const char* fname, FILE* fp) {
 	char buffer[256] = { '\0' };
 	double minDuration = std::numeric_limits<double>::max();
 	double maxDuration = 0.0;
+        double rmsDuration = 0.0;
+        int N = 0;
 
 	int64_t start = 1;
 	for (int digit = 1; digit <= 17; digit++) {
@@ -159,11 +149,13 @@ void BenchSequential(void(*f)(double, char*), const char* fname, FILE* fp) {
 		duration *= 1e6 / kIterationPerDigit; // convert to nano second per operation
 		minDuration = std::min(minDuration, duration);
 		maxDuration = std::max(maxDuration, duration);
+                rmsDuration += duration * duration;
+                N += 1;
 		fprintf(fp, "%s_sequential,%d,%f\n", fname, digit, duration);
 		start = end;
 	}
 
-	printf("[%8.3fns, %8.3fns]\n", minDuration, maxDuration);
+	printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration, sqrt(rmsDuration/N), maxDuration);
 }
 
 class RandomData {
@@ -285,6 +277,8 @@ void BenchRandomDigit(void(*f)(double, char*), const char* fname, FILE* fp) {
 	char buffer[256];
 	double minDuration = std::numeric_limits<double>::max();
 	double maxDuration = 0.0;
+        double rmsDuration = 0.0;
+        int N = 0;
 
 	for (int digit = 1; digit <= RandomDigitData::kMaxDigit; digit++) {
 		double* data = RandomDigitData::GetData(digit);
@@ -310,9 +304,11 @@ void BenchRandomDigit(void(*f)(double, char*), const char* fname, FILE* fp) {
 		duration *= 1e6 / (kIterationPerDigit * n); // convert to nano second per operation
 		minDuration = std::min(minDuration, duration);
 		maxDuration = std::max(maxDuration, duration);
+                rmsDuration += duration * duration;
+                N += 1;
 		fprintf(fp, "randomdigit,%s,%d,%f\n", fname, digit, duration);
 	}
-	printf("[%8.3fns, %8.3fns]\n", minDuration, maxDuration);
+        printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration, sqrt(rmsDuration/N), maxDuration);
 }
 
 void Bench(void(*f)(double, char*), const char* fname, FILE* fp) {

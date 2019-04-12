@@ -1,18 +1,18 @@
-/* emyg_dtoa.c 
+﻿/* emyg_dtoa.c
 ** Copyright (C) 2015 Doug Currie
 ** based on dtoa_milo.h
 ** Copyright (C) 2014 Milo Yip
-** 
+**
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
 ** in the Software without restriction, including without limitation the rights
 ** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 ** copies of the Software, and to permit persons to whom the Software is
 ** furnished to do so, subject to the following conditions:
-** 
+**
 ** The above copyright notice and this permission notice shall be included in
 ** all copies or substantial portions of the Software.
-** 
+**
 ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 ** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 ** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,9 +22,9 @@
 ** THE SOFTWARE.
 */
 
-/* This code is a mostly mechanical translation of Milo Yip's C++ version of 
-** Grisu2 to C.  For algorithm information, see Loitsch, Florian. "Printing 
-** floating-point numbers quickly and accurately with integers." ACM Sigplan 
+/* This code is a mostly mechanical translation of Milo Yip's C++ version of
+** Grisu2 to C.  For algorithm information, see Loitsch, Florian. "Printing
+** floating-point numbers quickly and accurately with integers." ACM Sigplan
 ** Notices 45.6 (2010): 233-243.
 */
 
@@ -32,11 +32,9 @@
 #include <math.h>
 
 #if defined(_MSC_VER)
-#include "msinttypes/stdint.h"
 #include <intrin.h>
-#else
-#include <stdint.h>
 #endif
+#include <stdint.h>
 
 #include <string.h>
 
@@ -49,10 +47,13 @@ typedef struct DiyFp_s {
 	int e;
 } DiyFp;
 
-static const int kDiySignificandSize = 64;
-static const int kDpSignificandSize = 52;
-static const int kDpExponentBias = 0x3FF + kDpSignificandSize;
-static const int kDpMinExponent = -kDpExponentBias;
+enum {
+    kDiySignificandSize = 64,
+    kDpSignificandSize = 52,
+    kDpExponentBias = 0x3FF + kDpSignificandSize,
+    kDpMinExponent = -kDpExponentBias
+};
+
 static const uint64_t kDpExponentMask = UINT64_C2(0x7FF00000, 0x00000000);
 static const uint64_t kDpSignificandMask = UINT64_C2(0x000FFFFF, 0xFFFFFFFF);
 static const uint64_t kDpHiddenBit = UINT64_C2(0x00100000, 0x00000000);
@@ -76,7 +77,7 @@ DiyFp DiyFp_from_double (double d) {
 	if (biased_e != 0) {
 		res.f = significand + kDpHiddenBit;
 		res.e = biased_e - kDpExponentBias;
-	} 
+	}
 	else {
 		res.f = significand;
 		res.e = kDpMinExponent + 1;
@@ -94,14 +95,14 @@ static inline DiyFp DiyFp_multiply (const DiyFp lhs, const DiyFp rhs) {
 #if defined(_MSC_VER) && defined(_M_AMD64)
 	uint64_t h;
 	uint64_t l = _umul128(lhs.f, rhs.f, &h);
-	if (l & (uint64_t(1) << 63)) // rounding
+	if (l & (UINT64_C(1) << 63)) // rounding
 		h++;
-	return DiyFp_fro_parts(h, e + rhs.e + 64);
-#elif ((__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __clang_major__ >= 9) && defined(__x86_64__))
+	return DiyFp_from_parts(h, lhs.e + rhs.e + 64);
+#elif defined(__SIZEOF_INT128__) || (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
 	unsigned __int128 p = (unsigned __int128 )(lhs.f) * (unsigned __int128 )(rhs.f);
 	uint64_t h = p >> 64;
 	uint64_t l = (uint64_t )(p);
-	if (l & ((uint64_t )1u << 63)) // rounding
+	if (l & (UINT64_C(1) << 63)) // rounding
 		h++;
 	return DiyFp_from_parts(h, lhs.e + rhs.e + 64);
 #else
@@ -159,8 +160,8 @@ static inline DiyFp NormalizeBoundary (const DiyFp lhs) {
 
 static inline void NormalizedBoundaries (DiyFp lhs, DiyFp* minus, DiyFp* plus) {
 	DiyFp pl = NormalizeBoundary(DiyFp_from_parts((lhs.f << 1) + 1, lhs.e - 1));
-	DiyFp mi = (lhs.f == kDpHiddenBit) 
-				? DiyFp_from_parts((lhs.f << 2) - 1, lhs.e - 2) 
+	DiyFp mi = (lhs.f == kDpHiddenBit)
+				? DiyFp_from_parts((lhs.f << 2) - 1, lhs.e - 2)
 				: DiyFp_from_parts((lhs.f << 1) - 1, lhs.e - 1);
 	mi.f <<= mi.e - pl.e;
 	mi.e = pl.e;
@@ -286,7 +287,7 @@ static inline void DigitGen(const DiyFp W, const DiyFp Mp, uint64_t delta, char*
 			case  3: d = p1 /        100; p1 %=        100; break;
 			case  2: d = p1 /         10; p1 %=         10; break;
 			case  1: d = p1;              p1 =           0; break;
-			default: 
+			default:
 #if defined(_MSC_VER)
 				__assume(0);
 #elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
