@@ -118,6 +118,8 @@ void BenchSequential(void(*f)(double, char*), const char* fname, FILE* fp) {
 	char buffer[256] = { '\0' };
 	double minDuration = std::numeric_limits<double>::max();
 	double maxDuration = 0.0;
+        double rmsDuration = 0.0;
+        int N = 0;
 
 	int64_t start = 1;
 	for (int digit = 1; digit <= 17; digit++) {
@@ -147,11 +149,13 @@ void BenchSequential(void(*f)(double, char*), const char* fname, FILE* fp) {
 		duration *= 1e6 / kIterationPerDigit; // convert to nano second per operation
 		minDuration = std::min(minDuration, duration);
 		maxDuration = std::max(maxDuration, duration);
+                rmsDuration += duration * duration;
+                N += 1;
 		fprintf(fp, "%s_sequential,%d,%f\n", fname, digit, duration);
 		start = end;
 	}
 
-	printf("[%8.3fns, %8.3fns]\n", minDuration, maxDuration);
+	printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration, sqrt(rmsDuration/N), maxDuration);
 }
 
 class RandomData {
@@ -273,6 +277,8 @@ void BenchRandomDigit(void(*f)(double, char*), const char* fname, FILE* fp) {
 	char buffer[256];
 	double minDuration = std::numeric_limits<double>::max();
 	double maxDuration = 0.0;
+        double rmsDuration = 0.0;
+        int N = 0;
 
 	for (int digit = 1; digit <= RandomDigitData::kMaxDigit; digit++) {
 		double* data = RandomDigitData::GetData(digit);
@@ -298,9 +304,11 @@ void BenchRandomDigit(void(*f)(double, char*), const char* fname, FILE* fp) {
 		duration *= 1e6 / (kIterationPerDigit * n); // convert to nano second per operation
 		minDuration = std::min(minDuration, duration);
 		maxDuration = std::max(maxDuration, duration);
+                rmsDuration += duration * duration;
+                N += 1;
 		fprintf(fp, "randomdigit,%s,%d,%f\n", fname, digit, duration);
 	}
-	printf("[%8.3fns, %8.3fns]\n", minDuration, maxDuration);
+        printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration, sqrt(rmsDuration/N), maxDuration);
 }
 
 void Bench(void(*f)(double, char*), const char* fname, FILE* fp) {
