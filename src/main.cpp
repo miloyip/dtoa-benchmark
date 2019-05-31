@@ -1,9 +1,7 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cassert>
-#include <cstdio>
 #include <cstring>
 #include <exception>
-#include <limits>
 #if _MSC_VER
 #include "msinttypes/stdint.h"
 #else
@@ -13,25 +11,27 @@
 #include "resultfilename.h"
 #include "test.h"
 #include "timer.h"
+#include <cstdio>
 #include <cstdlib>
-#include <math.h>
 
 const unsigned kVerifyRandomCount = 100000;
-const unsigned kIterationForRandom = 100;
-const unsigned kIterationPerDigit = 10;
-const unsigned kTrial = 10;
+const unsigned kIterations = 10000;
+const unsigned kRandomCount = 1000;
+const unsigned kTrial = 12;
+const int kMaxDigits = 17;
 
 class Random {
 public:
   Random(unsigned seed = 0) : mSeed(seed) {}
 
-  unsigned operator()() {
-    mSeed = 214013 * mSeed + 2531011;
+  uint64_t operator()() {
+    mSeed =
+        UINT64_C(6364136223846793005) * mSeed + UINT64_C(1442695040888963407);
     return mSeed;
   }
 
 private:
-  unsigned mSeed;
+  uint64_t mSeed;
 };
 
 static size_t VerifyValue(double value, void (*f)(double, char *)) {
@@ -47,58 +47,57 @@ static size_t VerifyValue(double value, void (*f)(double, char *)) {
 
   size_t len = strlen(buffer);
   if (len != (size_t)processed) {
-    printf("Error: some extra character %g -> '%s'\n", value, buffer);
+    printf("Warning: some extra character %g -> '%s'\n", value, buffer);
     throw std::exception();
   }
   if (value != roundtrip) {
-    printf("Error: roundtrip fail %.17g -> '%s' -> %.17g\n", value, buffer,
+    printf(": roundtrip fail %.17g -> '%s' -> %.17g\n", value, buffer,
            roundtrip);
-    // throw std::exception();
+    throw std::exception();
   }
 
   return len;
 }
 
-static void Verify(void (*f)(double, char *), const char *fname) {
-  printf("Verifying %-20s ... ", fname);
+static void Verify(const Case *it) {
+  printf("Verifying %s...", it->fname);
+  fflush(nullptr);
 
   // Boundary and simple cases
-  VerifyValue(0, f);
-  VerifyValue(0.1, f);
-  VerifyValue(0.12, f);
-  VerifyValue(0.123, f);
-  VerifyValue(0.1234, f);
-  VerifyValue(1.2345, f);
-  VerifyValue(1.0 / 3.0, f);
-  VerifyValue(2.0 / 3.0, f);
-  VerifyValue(10.0 / 3.0, f);
-  VerifyValue(20.0 / 3.0, f);
-  VerifyValue(std::numeric_limits<double>::min(), f);
-  VerifyValue(std::numeric_limits<double>::max(), f);
-  VerifyValue(std::numeric_limits<double>::denorm_min(), f);
+  VerifyValue(0, it->dtoa);
+  VerifyValue(0.1, it->dtoa);
+  VerifyValue(0.12, it->dtoa);
+  VerifyValue(0.123, it->dtoa);
+  VerifyValue(0.1234, it->dtoa);
+  VerifyValue(1.2345, it->dtoa);
+  VerifyValue(1.0 / 3.0, it->dtoa);
+  VerifyValue(2.0 / 3.0, it->dtoa);
+  VerifyValue(10.0 / 3.0, it->dtoa);
+  VerifyValue(20.0 / 3.0, it->dtoa);
+  VerifyValue(std::numeric_limits<double>::min(), it->dtoa);
+  VerifyValue(std::numeric_limits<double>::max(), it->dtoa);
+  VerifyValue(std::numeric_limits<double>::denorm_min(), it->dtoa);
 
+  Random rnd;
   union {
     double d;
     uint64_t u;
   } u;
-  Random r;
 
   uint64_t lenSum = 0;
   size_t lenMax = 0;
   for (unsigned i = 0; i < kVerifyRandomCount; i++) {
-    do {
-      // Need to call r() in two statements for cross-platform coherent
-      // sequence.
-      u.u = uint64_t(r()) << 32;
-      u.u |= uint64_t(r());
-    } while (isnan(u.d) || isinf(u.d));
-    size_t len = VerifyValue(u.d, f);
+    do
+      u.u = rnd();
+    while (isnan(u.d) || isinf(u.d));
+    size_t len = VerifyValue(u.d, it->dtoa);
     lenSum += len;
     lenMax = std::max(lenMax, len);
   }
 
   double lenAvg = double(lenSum) / kVerifyRandomCount;
-  printf("OK. Length Avg = %2.3f, Max = %d\n", lenAvg, (int)lenMax);
+  printf(" OK. Length Avg = %2.3f, Max = %d\n", lenAvg, (int)lenMax);
+  fflush(nullptr);
 }
 
 void VerifyAll() {
@@ -108,38 +107,36 @@ void VerifyAll() {
        ++itr) {
     if (strcmp((*itr)->fname, "null") != 0) { // skip null
       try {
-        Verify((*itr)->dtoa, (*itr)->fname);
+        Verify(*itr);
       } catch (...) {
       }
     }
   }
 }
 
-void BenchSequential(void (*f)(double, char *), const char *fname, FILE *fp) {
-  printf("Benchmarking  sequential %-20s ... ", fname);
+//------------------------------------------------------------------------------
 
-  char buffer[256] = {'\0'};
-  double minDuration = std::numeric_limits<double>::max();
-  double maxDuration = 0.0;
-  double rmsDuration = 0.0;
-  int N = 0;
+void BenchSequential(Case *it, FILE *fp) {
+  printf("Benchmarking  sequential %s...", it->fname);
+  fflush(nullptr);
+
+  Random rnd;
+  char buffer[256];
+  it->reset();
 
   int64_t start = 1;
-  for (int digit = 1; digit <= 17; digit++) {
+  for (int digit = 1; digit <= kMaxDigits; digit++) {
     int64_t end = start * 10;
 
     double duration = std::numeric_limits<double>::max();
     for (unsigned trial = 0; trial < kTrial; trial++) {
-      int64_t v = start;
-      Random r;
-      v += ((int64_t(r()) << 32) | int64_t(r())) % start;
+      int64_t v = start + int64_t(rnd()) % start;
       double sign = 1;
       Timer timer;
       timer.Start();
-      for (unsigned iteration = 0; iteration < kIterationPerDigit;
-           iteration++) {
+      for (unsigned iteration = 0; iteration < kIterations; iteration++) {
         double d = v * sign;
-        f(d, buffer);
+        it->dtoa(d, buffer);
         // printf("%.17g -> %s\n", d, buffer);
         sign = -sign;
         v += 1;
@@ -150,19 +147,16 @@ void BenchSequential(void (*f)(double, char *), const char *fname, FILE *fp) {
       duration = std::min(duration, timer.GetElapsedMilliseconds());
     }
 
-    duration *=
-        1e6 / kIterationPerDigit; // convert to nano second per operation
-    minDuration = std::min(minDuration, duration);
-    maxDuration = std::max(maxDuration, duration);
-    rmsDuration += duration * duration;
-    N += 1;
-    fprintf(fp, "%s_sequential,%d,%f\n", fname, digit, duration);
+    duration *= 1e6 / kIterations; // convert to nano second per operation
+    it->account(duration);
+    fprintf(fp, "sequential,%s,%d,%f\n", it->fname, digit, duration);
     start = end;
   }
-
-  printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration,
-         sqrt(rmsDuration / N), maxDuration);
+  printf(" Done\n");
+  fflush(nullptr);
 }
+
+//------------------------------------------------------------------------------
 
 class RandomData {
 public:
@@ -171,23 +165,18 @@ public:
     return singleton.mData;
   }
 
-  static const size_t kCount = 1000;
-
 private:
-  RandomData() : mData(new double[kCount]) {
-    Random r;
+  RandomData() : mData(new double[kRandomCount]) {
+    Random rnd;
     union {
       double d;
       uint64_t u;
     } u;
 
-    for (size_t i = 0; i < kCount; i++) {
-      do {
-        // Need to call r() in two statements for cross-platform coherent
-        // sequence.
-        u.u = uint64_t(r()) << 32;
-        u.u |= uint64_t(r());
-      } while (isnan(u.d) || isinf(u.d));
+    for (size_t i = 0; i < kRandomCount; i++) {
+      do
+        u.u = rnd();
+      while (isnan(u.d) || isinf(u.d));
       mData[i] = u.d;
     }
   }
@@ -197,62 +186,61 @@ private:
   double *mData;
 };
 
-void BenchRandom(void (*f)(double, char *), const char *fname, FILE *fp) {
-  printf("Benchmarking      random %-20s ... ", fname);
+void BenchRandom(Case *it, FILE *fp) {
+  printf("Benchmarking      random %s...", it->fname);
+  fflush(nullptr);
 
   char buffer[256];
+  it->reset();
   double *data = RandomData::GetData();
-  size_t n = RandomData::kCount;
 
   double duration = std::numeric_limits<double>::max();
   for (unsigned trial = 0; trial < kTrial; trial++) {
     Timer timer;
     timer.Start();
 
-    for (unsigned iteration = 0; iteration < kIterationForRandom; iteration++)
-      for (size_t i = 0; i < n; i++)
-        f(data[i], buffer);
+    static_assert(kIterations % kRandomCount == 0, "Oops");
+    for (unsigned iteration = 0; iteration < kIterations / kRandomCount;
+         iteration++)
+      for (size_t i = 0; i < kRandomCount; i++)
+        it->dtoa(data[i], buffer);
 
     timer.Stop();
     duration = std::min(duration, timer.GetElapsedMilliseconds());
   }
 
-  duration *=
-      1e6 / (kIterationForRandom * n); // convert to nano second per operation
+  duration *= 1e6 / kIterations; // convert to nano second per operation
+  it->account(duration);
+  fprintf(fp, "random,%s,0,%f\n", it->fname, duration);
 
-  fprintf(fp, "random,%s,0,%f\n", fname, duration);
-
-  printf("%8.3fns\n", duration);
+  printf(" Done\n");
+  fflush(nullptr);
 }
+
+//------------------------------------------------------------------------------
 
 class RandomDigitData {
 public:
   static double *GetData(int digit) {
-    assert(digit >= 1 && digit <= 17);
+    assert(digit >= 1 && digit <= kMaxDigits);
     static RandomDigitData singleton;
-    return singleton.mData + (digit - 1) * kCount;
+    return singleton.mData + (digit - 1) * kRandomCount;
   }
 
-  static const int kMaxDigit = 17;
-  static const size_t kCount = 1000;
-
 private:
-  RandomDigitData() : mData(new double[kMaxDigit * kCount]) {
-    Random r;
+  RandomDigitData() : mData(new double[kMaxDigits * kRandomCount]) {
+    Random rnd;
     union {
       double d;
       uint64_t u;
     } u;
 
     double *p = mData;
-    for (int digit = 1; digit <= kMaxDigit; digit++) {
-      for (size_t i = 0; i < kCount; i++) {
-        do {
-          // Need to call r() in two statements for cross-platform coherent
-          // sequence.
-          u.u = uint64_t(r()) << 32;
-          u.u |= uint64_t(r());
-        } while (isnan(u.d) || isinf(u.d));
+    for (int digit = 1; digit <= kMaxDigits; digit++) {
+      for (size_t i = 0; i < kRandomCount; i++) {
+        do
+          u.u = rnd();
+        while (isnan(u.d) || isinf(u.d));
 
         // Convert to string with limited digits, and convert it back.
         char buffer[256];
@@ -273,28 +261,26 @@ private:
   double *mData;
 };
 
-void BenchRandomDigit(void (*f)(double, char *), const char *fname, FILE *fp) {
-  printf("Benchmarking randomdigit %-20s ... ", fname);
+void BenchRandomDigit(Case *it, FILE *fp) {
+  printf("Benchmarking randomdigit %s...", it->fname);
+  fflush(nullptr);
 
   char buffer[256];
-  double minDuration = std::numeric_limits<double>::max();
-  double maxDuration = 0.0;
-  double rmsDuration = 0.0;
-  int N = 0;
+  it->reset();
 
-  for (int digit = 1; digit <= RandomDigitData::kMaxDigit; digit++) {
+  for (int digit = 1; digit <= kMaxDigits; digit++) {
     double *data = RandomDigitData::GetData(digit);
-    size_t n = RandomDigitData::kCount;
 
     double duration = std::numeric_limits<double>::max();
     for (unsigned trial = 0; trial < kTrial; trial++) {
       Timer timer;
       timer.Start();
 
-      for (unsigned iteration = 0; iteration < kIterationPerDigit;
+      static_assert(kIterations % kRandomCount == 0, "Oops");
+      for (unsigned iteration = 0; iteration < kIterations / kRandomCount;
            iteration++) {
-        for (size_t i = 0; i < n; i++) {
-          f(data[i], buffer);
+        for (size_t i = 0; i < kRandomCount; i++) {
+          it->dtoa(data[i], buffer);
           // if (trial == 0 && iteration == 0 && i == 0)
           //	printf("%.17g -> %s\n", data[i], buffer);
         }
@@ -304,22 +290,20 @@ void BenchRandomDigit(void (*f)(double, char *), const char *fname, FILE *fp) {
       duration = std::min(duration, timer.GetElapsedMilliseconds());
     }
 
-    duration *=
-        1e6 / (kIterationPerDigit * n); // convert to nano second per operation
-    minDuration = std::min(minDuration, duration);
-    maxDuration = std::max(maxDuration, duration);
-    rmsDuration += duration * duration;
-    N += 1;
-    fprintf(fp, "randomdigit,%s,%d,%f\n", fname, digit, duration);
+    duration *= 1e6 / kIterations; // convert to nano second per operation
+    it->account(duration);
+    fprintf(fp, "randomdigit,%s,%d,%f\n", it->fname, digit, duration);
   }
-  printf("[min %8.3fns, rms %8.3fns, max %8.3fns]\n", minDuration,
-         sqrt(rmsDuration / N), maxDuration);
+  printf(" Done\n");
+  fflush(nullptr);
 }
 
-void Bench(void (*f)(double, char *), const char *fname, FILE *fp) {
-  // BenchSequential(f, fname, fp);
-  // BenchRandom(f, fname, fp);
-  BenchRandomDigit(f, fname, fp);
+//------------------------------------------------------------------------------
+
+void Bench(Case *it, FILE *fp) {
+  // BenchSequential(it, fp);
+  // BenchRandom(it, fp);
+  BenchRandomDigit(it, fp);
 }
 
 void BenchAll() {
@@ -336,19 +320,51 @@ void BenchAll() {
 
   fprintf(fp, "Type,Function,Digit,Time(ns)\n");
 
-  const TestList &tests = TestManager::Instance().GetTests();
-
-  for (TestList::const_iterator itr = tests.begin(); itr != tests.end(); ++itr)
-    Bench((*itr)->dtoa, (*itr)->fname, fp);
+  for (auto it : TestManager::Instance().GetTests())
+    Bench(it, fp);
 
   fclose(fp);
 }
 
-int main() {
-  // sort tests
-  TestList &tests = TestManager::Instance().GetTests();
-  std::sort(tests.begin(), tests.end());
+void TestManager::Sort() {
+  std::sort(mTests.begin(), mTests.end(),
+            [](const Case *a, const Case *b) { return *a < *b; });
+}
 
+void TestManager::PrintScores(Score score, bool SkipWorseThanBaseline) const {
+  double baseline = 0;
+  for (const auto it : mTests)
+    if (it->baseline) {
+      baseline = it->*score;
+      break;
+    }
+
+  std::vector<const Case *> vector;
+  for (const auto it : mTests) {
+    if (SkipWorseThanBaseline && baseline && baseline <= it->*score)
+      continue;
+    vector.push_back(it);
+  }
+
+  std::sort(
+      vector.begin(), vector.end(),
+      [score](const Case *a, const Case *b) { return a->*score < b->*score; });
+
+  for (const auto it : vector)
+    if (it->min == it->max)
+      printf("%-20s [%8.1fns, speedup %.2f]\n", it->fname, it->sum,
+             (baseline ? baseline : 1.0) / it->*score);
+    else
+      printf(
+          "%-20s [min %8.1fns, rms %8.3fns, max %8.1fns, sum %8.1fns, speedup "
+          "%.2f]\n",
+          it->fname, it->min, it->rms, it->max, it->sum,
+          (baseline ? baseline : 1.0) / it->*score);
+}
+
+int main() {
+  TestManager::Instance().Sort();
   VerifyAll();
   BenchAll();
+  TestManager::Instance().PrintScores(&Case::rms);
 }

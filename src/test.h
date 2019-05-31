@@ -1,10 +1,14 @@
-#pragma once
+﻿#pragma once
 
+#include <limits>
+#include <math.h>
 #include <string.h>
 #include <vector>
 
-struct Test;
-typedef std::vector<const Test *> TestList;
+struct Case;
+typedef std::vector<Case *> TestList;
+typedef const double Case::*Score;
+
 class TestManager {
 public:
   static TestManager &Instance() {
@@ -12,27 +16,45 @@ public:
     return singleton;
   }
 
-  void AddTest(const Test *test) { mTests.push_back(test); }
-
-  const TestList &GetTests() const { return mTests; }
-
+  void AddTest(Case *test) { mTests.push_back(test); }
   TestList &GetTests() { return mTests; }
+  void Sort();
+  void PrintScores(Score score, bool SkipWorseThanBaseline = false) const;
 
 private:
   TestList mTests;
 };
 
-struct Test {
-  Test(const char *fname, void (*dtoa)(double, char *))
-      : fname(fname), dtoa(dtoa) {
+struct Case {
+  Case(const char *fname, void (*dtoa)(double, char *), bool baseline = false,
+       bool fake = false)
+      : fname(fname), dtoa(dtoa), baseline(baseline), fake(fake), min(0),
+        max(0), sum(0), rms(0) {
     TestManager::Instance().AddTest(this);
   }
 
-  bool operator<(const Test &rhs) const { return strcmp(fname, rhs.fname) < 0; }
+  friend bool operator<(const Case &a, const Case &b) {
+    return strcmp(a.fname, b.fname) < 0;
+  }
 
   const char *fname;
   void (*dtoa)(double, char *);
+  const bool baseline, fake;
+
+  double min, max, sum, rms;
+  void reset() {
+    min = std::numeric_limits<double>::max();
+    max = 0.0;
+    rms = 0.0;
+    sum = 0.0;
+  }
+  void account(const double duration) {
+    min = std::min(min, duration);
+    max = std::max(max, duration);
+    sum += duration;
+    rms = std::sqrt(rms * rms + duration * duration);
+  }
 };
 
 #define STRINGIFY(x) #x
-#define REGISTER_TEST(f) static Test gRegister##f(STRINGIFY(f), dtoa##_##f)
+#define REGISTER_TEST(f) static Case gRegister##f(STRINGIFY(f), dtoa##_##f)

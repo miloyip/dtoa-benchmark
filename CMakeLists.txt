@@ -144,9 +144,6 @@ set(SOURCES
 
 add_executable(d2a-benchmark ${SOURCES})
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-target_compile_options(d2a-benchmark PRIVATE "-ffast-math;-march=native")
-endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 target_compile_definitions(d2a-benchmark PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
