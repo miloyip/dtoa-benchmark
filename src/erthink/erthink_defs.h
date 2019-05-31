@@ -417,7 +417,7 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #endif /* __unreachable */
 
 #ifndef likely
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__COVERITY__)
 #define likely(cond) __builtin_expect(!!(cond), 1)
 #else
 #define likely(x) (x)
@@ -425,12 +425,23 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #endif /* likely */
 
 #ifndef unlikely
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__COVERITY__)
 #define unlikely(cond) __builtin_expect(!!(cond), 0)
 #else
 #define unlikely(x) (x)
 #endif
 #endif /* unlikely */
+
+/* Workaround for Coverity Scan */
+#if defined(__COVERITY__) && __GNUC_PREREQ(7, 0) && !defined(__cplusplus)
+typedef float _Float32;
+typedef double _Float32x;
+typedef double _Float64;
+typedef long double _Float64x;
+typedef float _Float128 __attribute__((__mode__(__TF__)));
+typedef __complex__ float __cfloat128 __attribute__((__mode__(__TC__)));
+typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
+#endif /* Workaround for Coverity Scan */
 
 #ifndef __aligned
 #if defined(__GNUC__) || defined(__clang__)
