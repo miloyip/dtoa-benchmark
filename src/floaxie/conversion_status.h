@@ -17,18 +17,16 @@
 #ifndef FLOAXIE_CONVERSION_STATUS_H
 #define FLOAXIE_CONVERSION_STATUS_H
 
-namespace floaxie
-{
-	/** \brief Enumeration of possible conversion results, either successful or
-	 * not.
-	 */
-	enum class conversion_status : unsigned char
-	{
+namespace floaxie {
+/** \brief Enumeration of possible conversion results, either successful or
+ * not.
+ */
+enum class conversion_status : unsigned char {
 
-		success, /**< the conversion was successful */
-		underflow, /**< an underflow occurred during the conversion */
-		overflow /**< an overflow occurred during the conversion */
-	};
-}
+  success,   /**< the conversion was successful */
+  underflow, /**< an underflow occurred during the conversion */
+  overflow   /**< an overflow occurred during the conversion */
+};
+} // namespace floaxie
 
 #endif // FLOAXIE_CONVERSION_STATUS_H

@@ -33,7 +33,7 @@
 namespace double_conversion {
 
 class Bignum {
- public:
+public:
   // 3584 = 128 * 28. We can represent 2^3584 > 10^1000 accurately.
   // This bignum can encode much bigger numbers, since it contains an
   // exponent.
@@ -42,7 +42,7 @@ class Bignum {
   Bignum();
   void AssignUInt16(uint16_t value);
   void AssignUInt64(uint64_t value);
-  void AssignBignum(const Bignum& other);
+  void AssignBignum(const Bignum &other);
 
   void AssignDecimalString(Vector<const char> value);
   void AssignHexString(Vector<const char> value);
@@ -51,9 +51,9 @@ class Bignum {
 
   void AddUInt16(uint16_t operand);
   void AddUInt64(uint64_t operand);
-  void AddBignum(const Bignum& other);
+  void AddBignum(const Bignum &other);
   // Precondition: this >= other.
-  void SubtractBignum(const Bignum& other);
+  void SubtractBignum(const Bignum &other);
 
   void Square();
   void ShiftLeft(int shift_amount);
@@ -65,39 +65,40 @@ class Bignum {
   //  int result = this / other;
   //  this = this % other;
   // In the worst case this function is in O(this/other).
-  uint16_t DivideModuloIntBignum(const Bignum& other);
+  uint16_t DivideModuloIntBignum(const Bignum &other);
 
-  bool ToHexString(char* buffer, int buffer_size) const;
+  bool ToHexString(char *buffer, int buffer_size) const;
 
   // Returns
   //  -1 if a < b,
   //   0 if a == b, and
   //  +1 if a > b.
-  static int Compare(const Bignum& a, const Bignum& b);
-  static bool Equal(const Bignum& a, const Bignum& b) {
+  static int Compare(const Bignum &a, const Bignum &b);
+  static bool Equal(const Bignum &a, const Bignum &b) {
     return Compare(a, b) == 0;
   }
-  static bool LessEqual(const Bignum& a, const Bignum& b) {
+  static bool LessEqual(const Bignum &a, const Bignum &b) {
     return Compare(a, b) <= 0;
   }
-  static bool Less(const Bignum& a, const Bignum& b) {
+  static bool Less(const Bignum &a, const Bignum &b) {
     return Compare(a, b) < 0;
   }
   // Returns Compare(a + b, c);
-  static int PlusCompare(const Bignum& a, const Bignum& b, const Bignum& c);
+  static int PlusCompare(const Bignum &a, const Bignum &b, const Bignum &c);
   // Returns a + b == c
-  static bool PlusEqual(const Bignum& a, const Bignum& b, const Bignum& c) {
+  static bool PlusEqual(const Bignum &a, const Bignum &b, const Bignum &c) {
     return PlusCompare(a, b, c) == 0;
   }
   // Returns a + b <= c
-  static bool PlusLessEqual(const Bignum& a, const Bignum& b, const Bignum& c) {
+  static bool PlusLessEqual(const Bignum &a, const Bignum &b, const Bignum &c) {
     return PlusCompare(a, b, c) <= 0;
   }
   // Returns a + b < c
-  static bool PlusLess(const Bignum& a, const Bignum& b, const Bignum& c) {
+  static bool PlusLess(const Bignum &a, const Bignum &b, const Bignum &c) {
     return PlusCompare(a, b, c) < 0;
   }
- private:
+
+private:
   typedef uint32_t Chunk;
   typedef uint64_t DoubleChunk;
 
@@ -116,7 +117,7 @@ class Bignum {
       UNREACHABLE();
     }
   }
-  void Align(const Bignum& other);
+  void Align(const Bignum &other);
   void Clamp();
   bool IsClamped() const;
   void Zero();
@@ -127,7 +128,7 @@ class Bignum {
   // BigitLength includes the "hidden" digits encoded in the exponent.
   int BigitLength() const { return used_digits_ + exponent_; }
   Chunk BigitAt(int index) const;
-  void SubtractTimes(const Bignum& other, int factor);
+  void SubtractTimes(const Bignum &other, int factor);
 
   Chunk bigits_buffer_[kBigitCapacity];
   // A vector backed by bigits_buffer_. This way accesses to the array are
@@ -140,6 +141,6 @@ class Bignum {
   DISALLOW_COPY_AND_ASSIGN(Bignum);
 };
 
-}  // namespace double_conversion
+} // namespace double_conversion
 
-#endif  // DOUBLE_CONVERSION_BIGNUM_H_
+#endif // DOUBLE_CONVERSION_BIGNUM_H_

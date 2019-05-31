@@ -22,60 +22,65 @@
 
 #include "conversion_status.h"
 
-namespace floaxie
-{
-	/** \brief Function template to wrap C Standard Library floating point
-	 * parse function based on floating-point type and character type (normal
-	 * or wide).
-	 *
-	 * \tparam FloatType floating point type to parse
-	 * \tparam CharType character type of string to parse
-	 */
-	template<typename FloatType, typename CharType> FloatType default_fallback(const CharType* str, CharType** str_end);
+namespace floaxie {
+/** \brief Function template to wrap C Standard Library floating point
+ * parse function based on floating-point type and character type (normal
+ * or wide).
+ *
+ * \tparam FloatType floating point type to parse
+ * \tparam CharType character type of string to parse
+ */
+template <typename FloatType, typename CharType>
+FloatType default_fallback(const CharType *str, CharType **str_end);
 
-	/** \brief `float` and `char`. */
-	template<> inline float default_fallback<float, char>(const char* str, char** str_end)
-	{
-		return std::strtof(str, str_end);
-	}
-
-	/** \brief `double` and `char`. */
-	template<> inline double default_fallback<double, char>(const char* str, char** str_end)
-	{
-		return std::strtod(str, str_end);
-	}
-
-	/** \brief `long double` and `char`. */
-	template<> inline long double default_fallback<long double, char>(const char* str, char** str_end)
-	{
-		return std::strtold(str, str_end);
-	}
-
-	/** \brief `float` and `wchar_t`. */
-	template<> inline float default_fallback<float, wchar_t>(const wchar_t* str, wchar_t** str_end)
-	{
-		return std::wcstof(str, str_end);
-	}
-
-	/** \brief `double` and `wchar_t`. */
-	template<> inline double default_fallback<double, wchar_t>(const wchar_t* str, wchar_t** str_end)
-	{
-		return std::wcstod(str, str_end);
-	}
-
-	/** \brief `long double` and `wchar_t`. */
-	template<> inline long double default_fallback<long double, wchar_t>(const wchar_t* str, wchar_t** str_end)
-	{
-		return std::wcstold(str, str_end);
-	}
-
-	template<typename FloatType> conversion_status check_errno(FloatType returned_value)
-	{
-		if (errno != ERANGE)
-			return conversion_status::success;
-
-		return returned_value ? conversion_status::overflow : conversion_status::underflow;
-	}
+/** \brief `float` and `char`. */
+template <>
+inline float default_fallback<float, char>(const char *str, char **str_end) {
+  return std::strtof(str, str_end);
 }
+
+/** \brief `double` and `char`. */
+template <>
+inline double default_fallback<double, char>(const char *str, char **str_end) {
+  return std::strtod(str, str_end);
+}
+
+/** \brief `long double` and `char`. */
+template <>
+inline long double default_fallback<long double, char>(const char *str,
+                                                       char **str_end) {
+  return std::strtold(str, str_end);
+}
+
+/** \brief `float` and `wchar_t`. */
+template <>
+inline float default_fallback<float, wchar_t>(const wchar_t *str,
+                                              wchar_t **str_end) {
+  return std::wcstof(str, str_end);
+}
+
+/** \brief `double` and `wchar_t`. */
+template <>
+inline double default_fallback<double, wchar_t>(const wchar_t *str,
+                                                wchar_t **str_end) {
+  return std::wcstod(str, str_end);
+}
+
+/** \brief `long double` and `wchar_t`. */
+template <>
+inline long double default_fallback<long double, wchar_t>(const wchar_t *str,
+                                                          wchar_t **str_end) {
+  return std::wcstold(str, str_end);
+}
+
+template <typename FloatType>
+conversion_status check_errno(FloatType returned_value) {
+  if (errno != ERANGE)
+    return conversion_status::success;
+
+  return returned_value ? conversion_status::overflow
+                        : conversion_status::underflow;
+}
+} // namespace floaxie
 
 #endif // FLOAXIE_DEFAULT_FALLBACK_H

@@ -40,6 +40,6 @@ double Strtod(Vector<const char> buffer, int exponent);
 // contain a dot or a sign. It must not start with '0', and must not be empty.
 float Strtof(Vector<const char> buffer, int exponent);
 
-}  // namespace double_conversion
+} // namespace double_conversion
 
-#endif  // DOUBLE_CONVERSION_STRTOD_H_
+#endif // DOUBLE_CONVERSION_STRTOD_H_

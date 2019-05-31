@@ -17,29 +17,29 @@
 #ifndef FLOAXIE_HUGE_VAL_H
 #define FLOAXIE_HUGE_VAL_H
 
-#include <limits>
 #include <cmath>
+#include <limits>
 
-namespace floaxie
-{
-	/** \brief Variable template to unify getting `HUGE_VAL` for
-	 * different floating point types in parameterized manner.
-	 *
-	 * \tparam FloatType floating point type to get `HUGE_VAL` for.
-	 *
-	 * \see [HUGE_VALF, HUGE_VAL, HUGE_VALL]
-	 * (http://en.cppreference.com/w/cpp/numeric/math/HUGE_VAL)
-	 */
-	template<typename FloatType> constexpr FloatType huge_value = std::numeric_limits<FloatType>::infinity();
+namespace floaxie {
+/** \brief Variable template to unify getting `HUGE_VAL` for
+ * different floating point types in parameterized manner.
+ *
+ * \tparam FloatType floating point type to get `HUGE_VAL` for.
+ *
+ * \see [HUGE_VALF, HUGE_VAL, HUGE_VALL]
+ * (http://en.cppreference.com/w/cpp/numeric/math/HUGE_VAL)
+ */
+template <typename FloatType>
+constexpr FloatType huge_value = std::numeric_limits<FloatType>::infinity();
 
-	/** \brief `float`. */
-	template<> constexpr float huge_value<float> = HUGE_VALF;
+/** \brief `float`. */
+template <> constexpr float huge_value<float> = HUGE_VALF;
 
-	/** \brief `double`. */
-	template<> constexpr double huge_value<double> = HUGE_VAL;
+/** \brief `double`. */
+template <> constexpr double huge_value<double> = HUGE_VAL;
 
-	/** \brief `long double`. */
-	template<> constexpr long double huge_value<long double> = HUGE_VALL;
-}
+/** \brief `long double`. */
+template <> constexpr long double huge_value<long double> = HUGE_VALL;
+} // namespace floaxie
 
 #endif // FLOAXIE_HUGE_VAL_H

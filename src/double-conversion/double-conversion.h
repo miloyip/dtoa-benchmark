@@ -33,7 +33,7 @@
 namespace double_conversion {
 
 class DoubleToStringConverter {
- public:
+public:
   // When calling ToFixed with a double > 10^kMaxFixedDigitsBeforePoint
   // or a requested_digits parameter > kMaxFixedDigitsAfterPoint then the
   // function returns false.
@@ -104,18 +104,14 @@ class DoubleToStringConverter {
   //   ToPrecision(230.0, 2) -> "230"
   //   ToPrecision(230.0, 2) -> "230."  with EMIT_TRAILING_DECIMAL_POINT.
   //   ToPrecision(230.0, 2) -> "2.3e2" with EMIT_TRAILING_ZERO_AFTER_POINT.
-  DoubleToStringConverter(int flags,
-                          const char* infinity_symbol,
-                          const char* nan_symbol,
-                          char exponent_character,
+  DoubleToStringConverter(int flags, const char *infinity_symbol,
+                          const char *nan_symbol, char exponent_character,
                           int decimal_in_shortest_low,
                           int decimal_in_shortest_high,
                           int max_leading_padding_zeroes_in_precision_mode,
                           int max_trailing_padding_zeroes_in_precision_mode)
-      : flags_(flags),
-        infinity_symbol_(infinity_symbol),
-        nan_symbol_(nan_symbol),
-        exponent_character_(exponent_character),
+      : flags_(flags), infinity_symbol_(infinity_symbol),
+        nan_symbol_(nan_symbol), exponent_character_(exponent_character),
         decimal_in_shortest_low_(decimal_in_shortest_low),
         decimal_in_shortest_high_(decimal_in_shortest_high),
         max_leading_padding_zeroes_in_precision_mode_(
@@ -125,11 +121,11 @@ class DoubleToStringConverter {
     // When 'trailing zero after the point' is set, then 'trailing point'
     // must be set too.
     ASSERT(((flags & EMIT_TRAILING_DECIMAL_POINT) != 0) ||
-        !((flags & EMIT_TRAILING_ZERO_AFTER_POINT) != 0));
+           !((flags & EMIT_TRAILING_ZERO_AFTER_POINT) != 0));
   }
 
   // Returns a converter following the EcmaScript specification.
-  static const DoubleToStringConverter& EcmaScriptConverter();
+  static const DoubleToStringConverter &EcmaScriptConverter();
 
   // Computes the shortest string of digits that correctly represent the input
   // number. Depending on decimal_in_shortest_low and decimal_in_shortest_high
@@ -154,15 +150,14 @@ class DoubleToStringConverter {
   // Returns true if the conversion succeeds. The conversion always succeeds
   // except when the input value is special and no infinity_symbol or
   // nan_symbol has been given to the constructor.
-  bool ToShortest(double value, StringBuilder* result_builder) const {
+  bool ToShortest(double value, StringBuilder *result_builder) const {
     return ToShortestIeeeNumber(value, result_builder, SHORTEST);
   }
 
   // Same as ToShortest, but for single-precision floats.
-  bool ToShortestSingle(float value, StringBuilder* result_builder) const {
+  bool ToShortestSingle(float value, StringBuilder *result_builder) const {
     return ToShortestIeeeNumber(value, result_builder, SHORTEST_SINGLE);
   }
-
 
   // Computes a decimal representation with a fixed number of digits after the
   // decimal point. The last emitted digit is rounded.
@@ -197,9 +192,8 @@ class DoubleToStringConverter {
   // The last two conditions imply that the result will never contain more than
   // 1 + kMaxFixedDigitsBeforePoint + 1 + kMaxFixedDigitsAfterPoint characters
   // (one additional character for the sign, and one for the decimal point).
-  bool ToFixed(double value,
-               int requested_digits,
-               StringBuilder* result_builder) const;
+  bool ToFixed(double value, int requested_digits,
+               StringBuilder *result_builder) const;
 
   // Computes a representation in exponential format with requested_digits
   // after the decimal point. The last emitted digit is rounded.
@@ -229,9 +223,8 @@ class DoubleToStringConverter {
   // kMaxExponentialDigits + 8 characters (the sign, the digit before the
   // decimal point, the decimal point, the exponent character, the
   // exponent's sign, and at most 3 exponent digits).
-  bool ToExponential(double value,
-                     int requested_digits,
-                     StringBuilder* result_builder) const;
+  bool ToExponential(double value, int requested_digits,
+                     StringBuilder *result_builder) const;
 
   // Computes 'precision' leading digits of the given 'value' and returns them
   // either in exponential or decimal format, depending on
@@ -267,9 +260,8 @@ class DoubleToStringConverter {
   // The last condition implies that the result will never contain more than
   // kMaxPrecisionDigits + 7 characters (the sign, the decimal point, the
   // exponent character, the exponent's sign, and at most 3 exponent digits).
-  bool ToPrecision(double value,
-                   int precision,
-                   StringBuilder* result_builder) const;
+  bool ToPrecision(double value, int precision,
+                   StringBuilder *result_builder) const;
 
   enum DtoaMode {
     // Produce the shortest correct representation.
@@ -332,42 +324,33 @@ class DoubleToStringConverter {
   // terminating null-character when computing the maximal output size.
   // The given length is only used in debug mode to ensure the buffer is big
   // enough.
-  static void DoubleToAscii(double v,
-                            DtoaMode mode,
-                            int requested_digits,
-                            char* buffer,
-                            int buffer_length,
-                            bool* sign,
-                            int* length,
-                            int* point);
+  static void DoubleToAscii(double v, DtoaMode mode, int requested_digits,
+                            char *buffer, int buffer_length, bool *sign,
+                            int *length, int *point);
 
- private:
+private:
   // Implementation for ToShortest and ToShortestSingle.
-  bool ToShortestIeeeNumber(double value,
-                            StringBuilder* result_builder,
+  bool ToShortestIeeeNumber(double value, StringBuilder *result_builder,
                             DtoaMode mode) const;
 
   // If the value is a special value (NaN or Infinity) constructs the
   // corresponding string using the configured infinity/nan-symbol.
   // If either of them is NULL or the value is not special then the
   // function returns false.
-  bool HandleSpecialValues(double value, StringBuilder* result_builder) const;
+  bool HandleSpecialValues(double value, StringBuilder *result_builder) const;
   // Constructs an exponential representation (i.e. 1.234e56).
   // The given exponent assumes a decimal point after the first decimal digit.
-  void CreateExponentialRepresentation(const char* decimal_digits,
-                                       int length,
+  void CreateExponentialRepresentation(const char *decimal_digits, int length,
                                        int exponent,
-                                       StringBuilder* result_builder) const;
+                                       StringBuilder *result_builder) const;
   // Creates a decimal representation (i.e 1234.5678).
-  void CreateDecimalRepresentation(const char* decimal_digits,
-                                   int length,
-                                   int decimal_point,
-                                   int digits_after_point,
-                                   StringBuilder* result_builder) const;
+  void CreateDecimalRepresentation(const char *decimal_digits, int length,
+                                   int decimal_point, int digits_after_point,
+                                   StringBuilder *result_builder) const;
 
   const int flags_;
-  const char* const infinity_symbol_;
-  const char* const nan_symbol_;
+  const char *const infinity_symbol_;
+  const char *const nan_symbol_;
   const char exponent_character_;
   const int decimal_in_shortest_low_;
   const int decimal_in_shortest_high_;
@@ -377,9 +360,8 @@ class DoubleToStringConverter {
   DISALLOW_IMPLICIT_CONSTRUCTORS(DoubleToStringConverter);
 };
 
-
 class StringToDoubleConverter {
- public:
+public:
   // Enumeration for allowing octals and ignoring junk when converting
   // strings to numbers.
   enum Flags {
@@ -483,54 +465,46 @@ class StringToDoubleConverter {
   //    StringToDouble("01239E45") -> 1239e45.
   //    StringToDouble("-infinity") -> NaN  // junk_string_value.
   //    StringToDouble("NaN") -> NaN  // junk_string_value.
-  StringToDoubleConverter(int flags,
-                          double empty_string_value,
-                          double junk_string_value,
-                          const char* infinity_symbol,
-                          const char* nan_symbol)
-      : flags_(flags),
-        empty_string_value_(empty_string_value),
+  StringToDoubleConverter(int flags, double empty_string_value,
+                          double junk_string_value, const char *infinity_symbol,
+                          const char *nan_symbol)
+      : flags_(flags), empty_string_value_(empty_string_value),
         junk_string_value_(junk_string_value),
-        infinity_symbol_(infinity_symbol),
-        nan_symbol_(nan_symbol) {
-  }
+        infinity_symbol_(infinity_symbol), nan_symbol_(nan_symbol) {}
 
   // Performs the conversion.
   // The output parameter 'processed_characters_count' is set to the number
   // of characters that have been processed to read the number.
   // Spaces than are processed with ALLOW_{LEADING|TRAILING}_SPACES are included
   // in the 'processed_characters_count'. Trailing junk is never included.
-  double StringToDouble(const char* buffer,
-                        int length,
-                        int* processed_characters_count) const {
+  double StringToDouble(const char *buffer, int length,
+                        int *processed_characters_count) const {
     return StringToIeee(buffer, length, processed_characters_count, true);
   }
 
   // Same as StringToDouble but reads a float.
   // Note that this is not equivalent to static_cast<float>(StringToDouble(...))
   // due to potential double-rounding.
-  float StringToFloat(const char* buffer,
-                      int length,
-                      int* processed_characters_count) const {
-    return static_cast<float>(StringToIeee(buffer, length,
-                                           processed_characters_count, false));
+  float StringToFloat(const char *buffer, int length,
+                      int *processed_characters_count) const {
+    return static_cast<float>(
+        StringToIeee(buffer, length, processed_characters_count, false));
   }
 
- private:
+private:
   const int flags_;
   const double empty_string_value_;
   const double junk_string_value_;
-  const char* const infinity_symbol_;
-  const char* const nan_symbol_;
+  const char *const infinity_symbol_;
+  const char *const nan_symbol_;
 
-  double StringToIeee(const char* buffer,
-                      int length,
-                      int* processed_characters_count,
+  double StringToIeee(const char *buffer, int length,
+                      int *processed_characters_count,
                       bool read_as_double) const;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(StringToDoubleConverter);
 };
 
-}  // namespace double_conversion
+} // namespace double_conversion
 
-#endif  // DOUBLE_CONVERSION_DOUBLE_CONVERSION_H_
+#endif // DOUBLE_CONVERSION_DOUBLE_CONVERSION_H_

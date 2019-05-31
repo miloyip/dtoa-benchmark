@@ -24,21 +24,24 @@
   */
 #pragma once
 
-static void fill_exponent(int K, char* buffer) {
-    int i = 0;
-    if (K < 0) {
-	buffer[i++] = '-';
-	K = -K;
-    }
-    if (K >= 100) {
-	buffer[i++] = '0' + K / 100; K %= 100;
-	buffer[i++] = '0' + K / 10; K %= 10;
-	buffer[i++] = '0' + K;
-    } else if (K >= 10) {
-	buffer[i++] = '0' + K / 10; K %= 10;
-	buffer[i++] = '0' + K;
-    } else {
-	buffer[i++] = '0' + K;
-    }
-    buffer[i] = '\0';
+static void fill_exponent(int K, char *buffer) {
+  int i = 0;
+  if (K < 0) {
+    buffer[i++] = '-';
+    K = -K;
+  }
+  if (K >= 100) {
+    buffer[i++] = '0' + K / 100;
+    K %= 100;
+    buffer[i++] = '0' + K / 10;
+    K %= 10;
+    buffer[i++] = '0' + K;
+  } else if (K >= 10) {
+    buffer[i++] = '0' + K / 10;
+    K %= 10;
+    buffer[i++] = '0' + K;
+  } else {
+    buffer[i++] = '0' + K;
+  }
+  buffer[i] = '\0';
 }

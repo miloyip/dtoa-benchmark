@@ -38,7 +38,7 @@ namespace double_conversion {
 // Multiplication and Subtraction do not normalize their results.
 // DiyFp are not designed to contain special doubles (NaN and Infinity).
 class DiyFp {
- public:
+public:
   static const int kSignificandSize = 64;
 
   DiyFp() : f_(0), e_(0) {}
@@ -48,7 +48,7 @@ class DiyFp {
   // The exponents of both numbers must be the same and the significand of this
   // must be bigger than the significand of other.
   // The result will not be normalized.
-  void Subtract(const DiyFp& other) {
+  void Subtract(const DiyFp &other) {
     ASSERT(e_ == other.e_);
     ASSERT(f_ >= other.f_);
     f_ -= other.f_;
@@ -57,18 +57,17 @@ class DiyFp {
   // Returns a - b.
   // The exponents of both numbers must be the same and this must be bigger
   // than other. The result will not be normalized.
-  static DiyFp Minus(const DiyFp& a, const DiyFp& b) {
+  static DiyFp Minus(const DiyFp &a, const DiyFp &b) {
     DiyFp result = a;
     result.Subtract(b);
     return result;
   }
 
-
   // this = this * other.
-  void Multiply(const DiyFp& other);
+  void Multiply(const DiyFp &other);
 
   // returns a * b;
-  static DiyFp Times(const DiyFp& a, const DiyFp& b) {
+  static DiyFp Times(const DiyFp &a, const DiyFp &b) {
     DiyFp result = a;
     result.Multiply(b);
     return result;
@@ -94,7 +93,7 @@ class DiyFp {
     e_ = e;
   }
 
-  static DiyFp Normalize(const DiyFp& a) {
+  static DiyFp Normalize(const DiyFp &a) {
     DiyFp result = a;
     result.Normalize();
     return result;
@@ -106,13 +105,13 @@ class DiyFp {
   void set_f(uint64_t new_value) { f_ = new_value; }
   void set_e(int new_value) { e_ = new_value; }
 
- private:
+private:
   static const uint64_t kUint64MSB = UINT64_2PART_C(0x80000000, 00000000);
 
   uint64_t f_;
   int e_;
 };
 
-}  // namespace double_conversion
+} // namespace double_conversion
 
-#endif  // DOUBLE_CONVERSION_DIY_FP_H_
+#endif // DOUBLE_CONVERSION_DIY_FP_H_

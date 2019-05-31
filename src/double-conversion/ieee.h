@@ -40,19 +40,18 @@ static float uint32_to_float(uint32_t d32) { return BitCast<float>(d32); }
 
 // Helper functions for doubles.
 class Double {
- public:
+public:
   static const uint64_t kSignMask = UINT64_2PART_C(0x80000000, 00000000);
   static const uint64_t kExponentMask = UINT64_2PART_C(0x7FF00000, 00000000);
   static const uint64_t kSignificandMask = UINT64_2PART_C(0x000FFFFF, FFFFFFFF);
   static const uint64_t kHiddenBit = UINT64_2PART_C(0x00100000, 00000000);
-  static const int kPhysicalSignificandSize = 52;  // Excludes the hidden bit.
+  static const int kPhysicalSignificandSize = 52; // Excludes the hidden bit.
   static const int kSignificandSize = 53;
 
   Double() : d64_(0) {}
   explicit Double(double d) : d64_(double_to_uint64(d)) {}
   explicit Double(uint64_t d64) : d64_(d64) {}
-  explicit Double(DiyFp diy_fp)
-    : d64_(DiyFpToUint64(diy_fp)) {}
+  explicit Double(DiyFp diy_fp) : d64_(DiyFpToUint64(diy_fp)) {}
 
   // The value encoded by this Double must be greater or equal to +0.0.
   // It must not be special (infinity, or NaN).
@@ -80,13 +79,12 @@ class Double {
   }
 
   // Returns the double's bit as uint64.
-  uint64_t AsUint64() const {
-    return d64_;
-  }
+  uint64_t AsUint64() const { return d64_; }
 
   // Returns the next greater double. Returns +infinity on input +infinity.
   double NextDouble() const {
-    if (d64_ == kInfinity) return Double(kInfinity).value();
+    if (d64_ == kInfinity)
+      return Double(kInfinity).value();
     if (Sign() < 0 && Significand() == 0) {
       // -0.0
       return 0.0;
@@ -99,17 +97,20 @@ class Double {
   }
 
   double PreviousDouble() const {
-    if (d64_ == (kInfinity | kSignMask)) return -Double::Infinity();
+    if (d64_ == (kInfinity | kSignMask))
+      return -Double::Infinity();
     if (Sign() < 0) {
       return Double(d64_ + 1).value();
     } else {
-      if (Significand() == 0) return -0.0;
+      if (Significand() == 0)
+        return -0.0;
       return Double(d64_ - 1).value();
     }
   }
 
   int Exponent() const {
-    if (IsDenormal()) return kDenormalExponent;
+    if (IsDenormal())
+      return kDenormalExponent;
 
     uint64_t d64 = AsUint64();
     int biased_e =
@@ -143,18 +144,18 @@ class Double {
   bool IsNan() const {
     uint64_t d64 = AsUint64();
     return ((d64 & kExponentMask) == kExponentMask) &&
-        ((d64 & kSignificandMask) != 0);
+           ((d64 & kSignificandMask) != 0);
   }
 
   bool IsInfinite() const {
     uint64_t d64 = AsUint64();
     return ((d64 & kExponentMask) == kExponentMask) &&
-        ((d64 & kSignificandMask) == 0);
+           ((d64 & kSignificandMask) == 0);
   }
 
   int Sign() const {
     uint64_t d64 = AsUint64();
-    return (d64 & kSignMask) == 0? 1: -1;
+    return (d64 & kSignMask) == 0 ? 1 : -1;
   }
 
   // Precondition: the value encoded by this Double must be greater or equal
@@ -168,7 +169,7 @@ class Double {
   // The bigger boundary (m_plus) is normalized. The lower boundary has the same
   // exponent as m_plus.
   // Precondition: the value encoded by this Double must be greater than 0.
-  void NormalizedBoundaries(DiyFp* out_m_minus, DiyFp* out_m_plus) const {
+  void NormalizedBoundaries(DiyFp *out_m_minus, DiyFp *out_m_plus) const {
     ASSERT(value() > 0.0);
     DiyFp v = this->AsDiyFp();
     DiyFp m_plus = DiyFp::Normalize(DiyFp((v.f() << 1) + 1, v.e() - 1));
@@ -209,19 +210,16 @@ class Double {
     if (order >= (kDenormalExponent + kSignificandSize)) {
       return kSignificandSize;
     }
-    if (order <= kDenormalExponent) return 0;
+    if (order <= kDenormalExponent)
+      return 0;
     return order - kDenormalExponent;
   }
 
-  static double Infinity() {
-    return Double(kInfinity).value();
-  }
+  static double Infinity() { return Double(kInfinity).value(); }
 
-  static double NaN() {
-    return Double(kNaN).value();
-  }
+  static double NaN() { return Double(kNaN).value(); }
 
- private:
+private:
   static const int kExponentBias = 0x3FF + kPhysicalSignificandSize;
   static const int kDenormalExponent = -kExponentBias + 1;
   static const int kMaxExponent = 0x7FF - kExponentBias;
@@ -254,19 +252,19 @@ class Double {
       biased_exponent = static_cast<uint64_t>(exponent + kExponentBias);
     }
     return (significand & kSignificandMask) |
-        (biased_exponent << kPhysicalSignificandSize);
+           (biased_exponent << kPhysicalSignificandSize);
   }
 
   DISALLOW_COPY_AND_ASSIGN(Double);
 };
 
 class Single {
- public:
+public:
   static const uint32_t kSignMask = 0x80000000;
   static const uint32_t kExponentMask = 0x7F800000;
   static const uint32_t kSignificandMask = 0x007FFFFF;
   static const uint32_t kHiddenBit = 0x00800000;
-  static const int kPhysicalSignificandSize = 23;  // Excludes the hidden bit.
+  static const int kPhysicalSignificandSize = 23; // Excludes the hidden bit.
   static const int kSignificandSize = 24;
 
   Single() : d32_(0) {}
@@ -282,12 +280,11 @@ class Single {
   }
 
   // Returns the single's bit as uint64.
-  uint32_t AsUint32() const {
-    return d32_;
-  }
+  uint32_t AsUint32() const { return d32_; }
 
   int Exponent() const {
-    if (IsDenormal()) return kDenormalExponent;
+    if (IsDenormal())
+      return kDenormalExponent;
 
     uint32_t d32 = AsUint32();
     int biased_e =
@@ -321,25 +318,25 @@ class Single {
   bool IsNan() const {
     uint32_t d32 = AsUint32();
     return ((d32 & kExponentMask) == kExponentMask) &&
-        ((d32 & kSignificandMask) != 0);
+           ((d32 & kSignificandMask) != 0);
   }
 
   bool IsInfinite() const {
     uint32_t d32 = AsUint32();
     return ((d32 & kExponentMask) == kExponentMask) &&
-        ((d32 & kSignificandMask) == 0);
+           ((d32 & kSignificandMask) == 0);
   }
 
   int Sign() const {
     uint32_t d32 = AsUint32();
-    return (d32 & kSignMask) == 0? 1: -1;
+    return (d32 & kSignMask) == 0 ? 1 : -1;
   }
 
   // Computes the two boundaries of this.
   // The bigger boundary (m_plus) is normalized. The lower boundary has the same
   // exponent as m_plus.
   // Precondition: the value encoded by this Single must be greater than 0.
-  void NormalizedBoundaries(DiyFp* out_m_minus, DiyFp* out_m_plus) const {
+  void NormalizedBoundaries(DiyFp *out_m_minus, DiyFp *out_m_plus) const {
     ASSERT(value() > 0.0);
     DiyFp v = this->AsDiyFp();
     DiyFp m_plus = DiyFp::Normalize(DiyFp((v.f() << 1) + 1, v.e() - 1));
@@ -377,15 +374,11 @@ class Single {
 
   float value() const { return uint32_to_float(d32_); }
 
-  static float Infinity() {
-    return Single(kInfinity).value();
-  }
+  static float Infinity() { return Single(kInfinity).value(); }
 
-  static float NaN() {
-    return Single(kNaN).value();
-  }
+  static float NaN() { return Single(kNaN).value(); }
 
- private:
+private:
   static const int kExponentBias = 0x7F + kPhysicalSignificandSize;
   static const int kDenormalExponent = -kExponentBias + 1;
   static const int kMaxExponent = 0xFF - kExponentBias;
@@ -397,6 +390,6 @@ class Single {
   DISALLOW_COPY_AND_ASSIGN(Single);
 };
 
-}  // namespace double_conversion
+} // namespace double_conversion
 
-#endif  // DOUBLE_CONVERSION_DOUBLE_H_
+#endif // DOUBLE_CONVERSION_DOUBLE_H_
