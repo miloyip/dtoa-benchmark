@@ -39,11 +39,17 @@ static size_t VerifyValue(double value, void (*f)(double, char *)) {
   f(value, buffer);
 
   // double-conversion returns correct result.
+#if 0
+  char *end = nullptr;
+  const double roundtrip =strtod(buffer, &end);
+  const size_t processed = end ? end - buffer : strnlen(buffer, sizeof(buffer));
+#else
   using namespace double_conversion;
   StringToDoubleConverter converter(
       StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
   int processed = 0;
   double roundtrip = converter.StringToDouble(buffer, 1024, &processed);
+#endif
 
   size_t len = strlen(buffer);
   if (len != (size_t)processed) {
@@ -250,11 +256,17 @@ private:
         // Convert to string with limited digits, and convert it back.
         char buffer[256];
         sprintf(buffer, "%.*g", digit, u.d);
+#if 0
+        char *end = nullptr;
+        const double roundtrip =strtod(buffer, &end);
+        const size_t processed = end ? end - buffer : strnlen(buffer, sizeof(buffer));
+#else
         using namespace double_conversion;
         StringToDoubleConverter converter(
             StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
         int processed = 0;
         double roundtrip = converter.StringToDouble(buffer, 256, &processed);
+#endif
 
         *p++ = roundtrip;
       }
@@ -358,8 +370,10 @@ void TestManager::PrintScores(Score score, bool SkipWorseThanBaseline) const {
       vector.begin(), vector.end(),
       [score](const Case *a, const Case *b) { return a->*score < b->*score; });
 
-  puts("Function      |  Min ns |  RMS ns  |  Max ns |   Sum ns  | Speedup |");
-  puts(":-------------|--------:|---------:|--------:|----------:|--------:|");
+  printf("Function      %s|   Sum ns  | Speedup |\n",
+         single_column ? "" : "|  Min ns |  RMS ns  |  Max ns ");
+  printf(":-------------%s|----------:|--------:|\n",
+         single_column ? "" : "|--------:|---------:|--------:");
 
   for (const auto it : vector) {
     printf("%-14s|", it->fname);
