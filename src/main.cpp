@@ -84,6 +84,11 @@ static void Verify(const Case *it) {
     uint64_t u;
   } u;
 
+  u.u = UINT64_C(0x345E0FFED391517E);
+  VerifyValue(u.d, it->dtoa);
+  u.u = UINT64_C(0xF6EA6C767640CD71);
+  VerifyValue(u.d, it->dtoa);
+
   uint64_t lenSum = 0;
   size_t lenMax = 0;
   for (unsigned i = 0; i < kVerifyRandomCount; i++) {
