@@ -16,8 +16,8 @@
 
 const unsigned kVerifyRandomCount = 100000;
 const unsigned kIterations = 10000;
-const unsigned kRandomCount = 1000;
-const unsigned kTrial = 12;
+const unsigned kRandomCount = 2000;
+const unsigned kTrial = 42;
 const int kMaxDigits = 17;
 
 class Random {
@@ -344,10 +344,13 @@ void TestManager::PrintScores(Score score, bool SkipWorseThanBaseline) const {
       break;
     }
 
+  bool single_column = true;
   std::vector<const Case *> vector;
   for (const auto it : mTests) {
     if (SkipWorseThanBaseline && baseline && baseline <= it->*score)
       continue;
+    if (it->count > 1)
+      single_column = false;
     vector.push_back(it);
   }
 
@@ -355,21 +358,21 @@ void TestManager::PrintScores(Score score, bool SkipWorseThanBaseline) const {
       vector.begin(), vector.end(),
       [score](const Case *a, const Case *b) { return a->*score < b->*score; });
 
-  for (const auto it : vector)
-    if (it->min == it->max)
-      printf("%-20s [%8.1fns, speedup %.2f]\n", it->fname, it->sum,
-             (baseline ? baseline : 1.0) / it->*score);
-    else
-      printf(
-          "%-20s [min %8.1fns, rms %8.3fns, max %8.1fns, sum %8.1fns, speedup "
-          "%.2f]\n",
-          it->fname, it->min, it->rms, it->max, it->sum,
-          (baseline ? baseline : 1.0) / it->*score);
+  puts("Function      |  Min ns |  RMS ns  |  Max ns |   Sum ns  | Speedup |");
+  puts(":-------------|--------:|---------:|--------:|----------:|--------:|");
+
+  for (const auto it : vector) {
+    printf("%-14s|", it->fname);
+    if (!single_column)
+      printf("%8.1f |%9.3f |%8.1f |", it->min, it->rms, it->max);
+    printf("%10.1f | ×%-6.1f |\n", it->sum,
+           (baseline ? baseline : 1.0) / it->*score);
+  }
 }
 
 int main() {
   TestManager::Instance().Sort();
   VerifyAll();
   BenchAll();
-  TestManager::Instance().PrintScores(&Case::rms);
+  TestManager::Instance().PrintScores(&Case::sum);
 }

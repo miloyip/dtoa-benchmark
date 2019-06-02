@@ -28,8 +28,7 @@ private:
 struct Case {
   Case(const char *fname, void (*dtoa)(double, char *), bool baseline = false,
        bool fake = false)
-      : fname(fname), dtoa(dtoa), baseline(baseline), fake(fake), min(0),
-        max(0), sum(0), rms(0) {
+      : fname(fname), dtoa(dtoa), baseline(baseline), fake(fake) {
     TestManager::Instance().AddTest(this);
   }
 
@@ -42,17 +41,20 @@ struct Case {
   const bool baseline, fake;
 
   double min, max, sum, rms;
+  unsigned count;
+
   void reset() {
     min = std::numeric_limits<double>::max();
     max = 0.0;
     rms = 0.0;
     sum = 0.0;
+    count = 0;
   }
   void account(const double duration) {
     min = std::min(min, duration);
     max = std::max(max, duration);
     sum += duration;
-    rms = std::sqrt(rms * rms + duration * duration);
+    rms = std::sqrt((rms * rms * count + duration * duration) / (count += 1));
   }
 };
 
