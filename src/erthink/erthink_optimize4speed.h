@@ -15,10 +15,10 @@
  *  limitations under the License.
  */
 
-#pragma once
+#ifdef _MSC_VER
+#pragma optimize("gt", on)
+#endif
 
-#include "erthink_byteorder.h"
-#include "erthink_defs.h"
-#include "erthink_intrin.h"
-
-/* TODO */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC optimize("-Ofast")
+#endif

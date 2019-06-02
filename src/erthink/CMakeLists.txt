@@ -1,21 +1,17 @@
-﻿## Copyright (c) 2012-2019 Leonid Yuriev <leo@yuriev.ru>.
-## ZLib License
+﻿##  Copyright (c) 2012-2019 Leonid Yuriev <leo@yuriev.ru>.
 ##
-## This software is provided 'as-is', without any express or implied
-## warranty. In no event will the authors be held liable for any damages
-## arising from the use of this software.
+##  Licensed under the Apache License, Version 2.0 (the "License");
+##  you may not use this file except in compliance with the License.
+##  You may obtain a copy of the License at
 ##
-## Permission is granted to anyone to use this software for any purpose,
-## including commercial applications, and to alter it and redistribute it
-## freely, subject to the following restrictions:
+##      http://www.apache.org/licenses/LICENSE-2.0
 ##
-## 1. The origin of this software must not be misrepresented; you must not
-##    claim that you wrote the original software. If you use this software
-##    in a product, an acknowledgement in the product documentation would be
-##    appreciated but is not required.
-## 2. Altered source versions must be plainly marked as such, and must not be
-##    misrepresented as being the original software.
-## 3. This notice may not be removed or altered from any source distribution.
+##  Unless required by applicable law or agreed to in writing, software
+##  distributed under the License is distributed on an "AS IS" BASIS,
+##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+##  See the License for the specific language governing permissions and
+##  limitations under the License.
+##
 
 ##
 ##  This CMakeLists.txt required for testing, but most things are header-only.
@@ -23,16 +19,26 @@
 ##
 
 cmake_minimum_required(VERSION 3.8.2)
-cmake_policy(SET CMP0054 NEW)
+cmake_policy(PUSH)
+cmake_policy(VERSION 3.8.2)
 if(NOT CMAKE_VERSION VERSION_LESS 3.12)
   cmake_policy(SET CMP0075 NEW)
+endif()
+if(NOT CMAKE_VERSION VERSION_LESS 3.9)
+  cmake_policy(SET CMP0069 NEW)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT CMAKE_INTERPROCEDURAL_OPTIMIZATION_AVAILABLE)
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_AVAILABLE FALSE)
 endif()
 
 if(DEFINED PROJECT_NAME)
   set(SUBPROJECT ON)
 else()
   set(SUBPROJECT OFF)
-  project(erthink CXX)
+  project(erthink
+    VERSION 0.1
+    LANGUAGES CXX)
 endif()
 
 if(NOT "$ENV{TEAMCITY_PROCESS_FLOW_ID}" STREQUAL "")
@@ -55,10 +61,6 @@ else()
   unset(CI)
 endif()
 
-include(CheckIncludeFiles)
-include(CheckCXXSourceRuns)
-include(CheckCXXSourceCompiles)
-include(CheckFunctionExists)
 include(CMakeDependentOption)
 #
 # Set default build type to Release. This is to ease a User's life.
@@ -69,11 +71,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
+if (MSVC)
+  if (MSVC_VERSION LESS 1915)
+    message(FATAL_ERROR At least \"Microsoft C/C++ Compiler\" version 19.15.26730 (Visual Studio 2017 15.8) is required.)
+  else()
+    add_compile_options("/Zc:__cplusplus")
+  endif()
+endif()
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 HAS_CXX17)
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 HAS_CXX14)
 
 if(NOT DEFINED ERTHINK_CXX_STANDARD)
-  if(SUBPROJECT AND DEFINED CMAKE_CXX_STANDARD)
+  if(DEFINED CMAKE_CXX_STANDARD)
     set(ERTHINK_CXX_STANDARD ${CMAKE_CXX_STANDARD})
   elseif(NOT HAS_CXX17 LESS 0)
     set(ERTHINK_CXX_STANDARD 17)
@@ -85,10 +94,13 @@ if(NOT DEFINED ERTHINK_CXX_STANDARD)
 endif()
 message(STATUS "Use C++${ERTHINK_CXX_STANDARD} for Erthink")
 
-option(ERTHINK_ENABLE_TESTS "Build erthink tests." ON)
-option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
+include(cmake/utils.cmake)
+include(cmake/compiler.cmake)
+include(cmake/profile.cmake)
+
 if(NOT SUBPROJECT)
   option(CMAKE_POSITION_INDEPENDENT_CODE "Generate position independed (PIC)." ON)
+  option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 
   find_program(VALGRIND valgrind)
   if(VALGRIND)
@@ -103,13 +115,12 @@ if(NOT SUBPROJECT)
       CACHE STRING "Valgrind options" FORCE)
     set(VALGRIND_COMMAND_OPTIONS "${MEMORYCHECK_COMMAND_OPTIONS}" CACHE STRING "Valgrind options" FORCE)
   endif()
+  include(cmake/testing.cmake)
 
   if(NOT DEFINED CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
   endif()
-  include(cmake/testing.cmake)
 
-  #
   # Enable 'make tags' target.
   find_program(CTAGS ctags)
   if(CTAGS)
@@ -118,7 +129,6 @@ if(NOT SUBPROJECT)
     add_custom_target(ctags DEPENDS tags)
   endif(CTAGS)
 
-  #
   # Enable 'make reformat' target.
   find_program(CLANG_FORMAT
     NAMES clang-format-6.0 clang-format-5.0 clang-format-4.0
@@ -149,18 +159,24 @@ if(NOT SUBPROJECT)
   endif()
 endif(NOT SUBPROJECT)
 
-#######################################################################
+################################################################################
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_library(erthink INTERFACE)
 
-set(erthink_HEADERS erthink_defs.h erthink_byteorder.h erthink_intrin.h erthink_arch.h
-  erthink_bswap.h erthink_rot.h erthink_carryadd.h erthink_mul.h erthink_clz.h
-  erthink_u2a.h erthink_d2a.h erthink_misc.h erthink.h)
+set(erthink_HEADERS
+  erthink_arch.h erthink_bswap.h erthink_byteorder.h erthink_carryadd.h
+  erthink_clz.h erthink_d2a.h erthink_defs.h erthink_dynamic_constexpr.h
+  erthink_intrin.h erthink_misc.h erthink_mul.h erthink_rot.h erthink_u2a.h
+  erthink_optimize4size.h erthink_optimize4speed.h erthink_short_alloc.h
+  erthink_ifunc.h erthink_endian.h erthink.h)
 
 target_compile_features(erthink INTERFACE "cxx_std_${ERTHINK_CXX_STANDARD}")
 
+option(ERTHINK_ENABLE_TESTS "Build erthink tests." ${BUILD_TESTING})
 if(ERTHINK_ENABLE_TESTS)
   add_subdirectory(test)
 endif()
+
+cmake_policy(POP)

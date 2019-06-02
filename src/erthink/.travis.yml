@@ -1,6 +1,14 @@
 language: cpp
-sudo: required
-dist: trusty
+sudo: false
+dist: xenial
+
+addons:
+  apt:
+#    sources:
+#      - ubuntu-toolchain-r-test
+    packages:
+      - cmake
+      - libgtest-dev
 
 compiler:
   - gcc
@@ -8,6 +16,7 @@ compiler:
 
 os:
   - linux
+#  - osx
 
 script: >
   cmake --version &&

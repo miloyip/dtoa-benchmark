@@ -1,23 +1,18 @@
 ﻿/*
- *  Copyright (c) 2010-2019 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/leo-yuriev/erthink
- *  ZLib License
  *
- *  This software is provided 'as-is', without any express or implied
- *  warranty. In no event will the authors be held liable for any damages
- *  arising from the use of this software.
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *  Permission is granted to anyone to use this software for any purpose,
- *  including commercial applications, and to alter it and redistribute it
- *  freely, subject to the following restrictions:
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  1. The origin of this software must not be misrepresented; you must not
- *     claim that you wrote the original software. If you use this software
- *     in a product, an acknowledgement in the product documentation would be
- *     appreciated but is not required.
- *  2. Altered source versions must be plainly marked as such, and must not be
- *     misrepresented as being the original software.
- *  3. This notice may not be removed or altered from any source distribution.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 #pragma once
@@ -79,7 +74,7 @@ static cxx14_constexpr int dec_digits(uint32_t n) {
   return 10;
 }
 
-static inline /* LY: 'inline' here if better for performance than 'constexpr' */
+static inline /* LY: 'inline' here is better for performance than 'constexpr' */
     uint64_t
     dec_power(unsigned n) {
   static const uint64_t array[] = {
@@ -140,9 +135,10 @@ struct diy_fp {
     e = static_cast<int>(exp_bits >> IEEE754_DOUBLE_MANTISSA_SIZE) -
         (exp_bits ? GRISU_EXPONENT_BIAS : GRISU_EXPONENT_BIAS - 1);
   }
-  constexpr diy_fp(const diy_fp &rhs) : f(rhs.f), e(rhs.e) {}
-  constexpr diy_fp(uint64_t f, int e) : f(f), e(e) {}
-  diy_fp() {}
+  constexpr diy_fp(const diy_fp &rhs) noexcept = default;
+  constexpr diy_fp(uint64_t f, int e) noexcept : f(f), e(e) {}
+  constexpr diy_fp &operator=(const diy_fp &rhs) noexcept = default;
+  diy_fp() = default;
 
   static diy_fp fixedpoint(uint64_t value, int exp2) {
     assert(value > 0);
@@ -184,7 +180,8 @@ struct diy_fp {
 #endif
 
 static diy_fp cached_power(const int in_exp2, int &out_exp10) {
-  constexpr size_t n_items = (340 + 340) / 8 + 1 /* 10^-340 .. 0 .. 10^340 */;
+  constexpr std::size_t n_items =
+      (340 + 340) / 8 + 1 /* 10^-340 .. 0 .. 10^340 */;
   assert(in_exp2 < 1096 && in_exp2 > -1191);
 
   /* LY: avoid branches and IEEE754-to-integer conversion,
@@ -200,7 +197,7 @@ static diy_fp cached_power(const int in_exp2, int &out_exp10) {
   assert(static_cast<int>(exp10_unbiased) ==
          static_cast<int>(ceil((-61 - in_exp2) / log2(10.0))) + 347);
 
-  const size_t index = exp10_unbiased >> 3;
+  const std::size_t index = exp10_unbiased >> 3;
   assert(n_items > index);
   out_exp10 = int(340 - (exp10_unbiased & ~7));
 
@@ -286,76 +283,132 @@ static inline char *make_digits(const diy_fp &v, const diy_fp &upper,
   uint_fast32_t digit, body = static_cast<uint_fast32_t>(upper.f >> shift);
   uint64_t tail = upper.f & mask;
   int kappa = dec_digits(body);
+  assert(kappa > 0);
 
-  while (kappa > 0) {
-    switch (kappa) {
+  do {
+    switch (--kappa) {
     default:
       assert(false);
       __unreachable();
-    case 10:
+    case 9:
       digit = body / UINT_E9;
       body %= UINT_E9;
       break;
-    case 9:
+    case 8:
       digit = body / UINT_E8;
       body %= UINT_E8;
       break;
-    case 8:
+    case 7:
       digit = body / UINT_E7;
       body %= UINT_E7;
       break;
-    case 7:
+    case 6:
       digit = body / UINT_E6;
       body %= UINT_E6;
       break;
-    case 6:
+    case 5:
       digit = body / UINT_E5;
       body %= UINT_E5;
       break;
-    case 5:
+    case 4:
       digit = body / UINT_E4;
       body %= UINT_E4;
       break;
-    case 4:
+    case 3:
       digit = body / 1000u;
       body %= 1000u;
       break;
-    case 3:
+    case 2:
       digit = body / 100u;
       body %= 100u;
       break;
-    case 2:
+    case 1:
       digit = body / 10u;
       body %= 10u;
       break;
-    case 1:
+    case 0:
       digit = body;
-      body = 0u;
-      break;
+      if (unlikely(tail < delta)) {
+      early:
+        *ptr++ = static_cast<char>(digit + '0');
+        inout_exp10 += kappa;
+        assert(kappa >= 0);
+        round(ptr, delta, tail, dec_power(unsigned(kappa)) << shift, gap.f);
+        return ptr;
+      }
+
+      while (true) {
+        if (likely(digit))
+          goto done;
+        --kappa;
+        tail *= 10;
+        delta *= 10;
+        digit = static_cast<uint_fast32_t>(tail >> shift);
+        tail &= mask;
+      }
     }
-    *ptr = static_cast<char>(digit + '0');
-    --kappa;
+
     const uint64_t left = (static_cast<uint64_t>(body) << shift) + tail;
-    ptr += (digit || ptr > buffer);
-    if (left < delta) {
-      inout_exp10 += kappa;
-      assert(kappa >= 0);
-      round(ptr, delta, left, dec_power(unsigned(kappa)) << shift, gap.f);
-      return ptr;
+    if (unlikely(left < delta))
+      goto early;
+
+  } while (unlikely(digit == 0));
+
+  while (true) {
+    *ptr++ = static_cast<char>(digit + '0');
+    switch (--kappa) {
+    default:
+      assert(false);
+      __unreachable();
+    case 9:
+      digit = body / UINT_E9;
+      body %= UINT_E9;
+      break;
+    case 8:
+      digit = body / UINT_E8;
+      body %= UINT_E8;
+      break;
+    case 7:
+      digit = body / UINT_E7;
+      body %= UINT_E7;
+      break;
+    case 6:
+      digit = body / UINT_E6;
+      body %= UINT_E6;
+      break;
+    case 5:
+      digit = body / UINT_E5;
+      body %= UINT_E5;
+      break;
+    case 4:
+      digit = body / UINT_E4;
+      body %= UINT_E4;
+      break;
+    case 3:
+      digit = body / 1000u;
+      body %= 1000u;
+      break;
+    case 2:
+      digit = body / 100u;
+      body %= 100u;
+      break;
+    case 1:
+      digit = body / 10u;
+      body %= 10u;
+      break;
+    case 0:
+      digit = body;
+      goto done;
     }
+
+    const uint64_t left = (static_cast<uint64_t>(body) << shift) + tail;
+    if (unlikely(left < delta))
+      goto early;
   }
 
-  if (ptr == buffer) {
-    do {
-      --kappa;
-      tail *= 10;
-      delta *= 10;
-      digit = static_cast<uint_fast32_t>(tail >> shift);
-      tail &= mask;
-    } while (unlikely(!digit));
-    *ptr++ = static_cast<char>(digit + '0');
-  }
-  while (tail > delta) {
+done:
+  *ptr++ = static_cast<char>(digit + '0');
+  while (likely(tail > delta)) {
     --kappa;
     tail *= 10;
     delta *= 10;

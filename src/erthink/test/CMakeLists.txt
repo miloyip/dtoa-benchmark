@@ -1,4 +1,4 @@
-﻿include_directories(${UT_INCLUDE_DIRECTORIES})
+include_directories(${UT_INCLUDE_DIRECTORIES})
 
 if(BUILD_SHARED_LIBS)
   add_definitions("-DGTEST_LINKED_AS_SHARED_LIBRARY=1")
@@ -27,3 +27,4 @@ endif()
 add_ut(erthink_ops TIMEOUT ${ops_timeout} SOURCE testing.h ops.cxx LIBRARY erthink)
 add_ut(erthink_u2a TIMEOUT ${u2a_timeout} SOURCE testing.h u2a.cxx LIBRARY erthink)
 add_ut(erthink_d2a TIMEOUT ${d2a_timeout} SOURCE testing.h d2a.cxx LIBRARY erthink)
+add_ut(erthink_short_alloc TIMEOUT ${d2a_timeout} SOURCE testing.h short_alloc.cxx LIBRARY erthink)

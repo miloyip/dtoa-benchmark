@@ -1,23 +1,18 @@
 ﻿/*
  *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/leo-yuriev/erthink
- *  ZLib License
  *
- *  This software is provided 'as-is', without any express or implied
- *  warranty. In no event will the authors be held liable for any damages
- *  arising from the use of this software.
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *  Permission is granted to anyone to use this software for any purpose,
- *  including commercial applications, and to alter it and redistribute it
- *  freely, subject to the following restrictions:
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  1. The origin of this software must not be misrepresented; you must not
- *     claim that you wrote the original software. If you use this software
- *     in a product, an acknowledgement in the product documentation would be
- *     appreciated but is not required.
- *  2. Altered source versions must be plainly marked as such, and must not be
- *     misrepresented as being the original software.
- *  3. This notice may not be removed or altered from any source distribution.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 #pragma once
@@ -36,9 +31,13 @@
                                    is not guaranteed. Specify /EHsc */
 #endif
 #if defined(__KERNEL__) || !defined(__cplusplus) || __cplusplus < 201103L
+#include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 #else
+#include <cassert>
 #include <cstddef>
+#include <cstdint>
 #endif
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -95,6 +94,10 @@
 #define __has_include(x) (0)
 #endif
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
 #if __has_feature(thread_sanitizer)
 #define __SANITIZE_THREAD__ 1
 #endif
@@ -103,11 +106,14 @@
 #define __SANITIZE_ADDRESS__ 1
 #endif
 
-//----------------------------------------------------------------------------
+#if !defined(__cplusplus) && (HAVE_STDALIGN_H || __has_include(<stdalign.h>))
+#include <stdalign.h>
+#endif
+
+//------------------------------------------------------------------------------
 
 #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-#if (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__) ||              \
-    defined(_MSC_VER)
+#if __GNUC_PREREQ(2, 0) || defined(__clang__) || defined(_MSC_VER)
 #define __func__ __FUNCTION__
 #else
 #define __func__ "__func__"
@@ -134,20 +140,37 @@
 #endif
 #endif
 
-#if !defined(nullptr) && !defined(__cplusplus) ||                              \
-    (__cplusplus < 201103L && !defined(_MSC_VER))
-#define nullptr NULL
+#ifndef __fallthrough
+#if __has_cpp_attribute(fallthrough)
+#define __fallthrough [[fallthrough]]
+#elif __GNUC_PREREQ(8, 0) && defined(__cplusplus) && __cplusplus >= 201103L
+#define __fallthrough [[fallthrough]]
+#elif __GNUC_PREREQ(7, 0)
+#define __fallthrough __attribute__((fallthrough))
+#elif defined(__clang__) && defined(__cplusplus) && __cplusplus >= 201103L &&  \
+    __has_feature(cxx_attributes) && __has_warning("-Wimplicit-fallthrough")
+#define __fallthrough [[clang::fallthrough]]
+#else
+#define __fallthrough
 #endif
+#endif /* __fallthrough */
 
-#if !defined(constexpr) && !defined(__cplusplus) ||                            \
-    (__cplusplus < 201103L && !defined(_MSC_VER))
+#if !defined(nullptr) && (!defined(__cplusplus) || __cplusplus < 201103L)
+#define nullptr NULL
+#endif /* nullptr */
+
+#if !defined(noexcept) && (!defined(__cplusplus) || __cplusplus < 201103L)
+#define noexcept
+#endif /* noexcept */
+
+#if !defined(constexpr) && (!defined(__cplusplus) || __cplusplus < 201103L)
 #define constexpr
-#endif
+#endif /* constexpr */
 
 #if !defined(cxx14_constexpr)
 #if defined(__cplusplus) && __cplusplus >= 201402L &&                          \
     (!defined(_MSC_VER) || _MSC_VER >= 1910) &&                                \
-    (!defined(__GNUC__) || __GNUC__ >= 6)
+    (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 6)
 #define cxx14_constexpr constexpr
 #else
 #define cxx14_constexpr
@@ -157,20 +180,63 @@
 #if !defined(cxx17_constexpr)
 #if defined(__cplusplus) && __cplusplus >= 201703L &&                          \
     (!defined(_MSC_VER) || _MSC_VER >= 1915) &&                                \
-    (!defined(__GNUC__) || __GNUC__ >= 7)
+    (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 7)
 #define cxx17_constexpr constexpr
+#define cxx17_noexcept noexcept
+#define if_constexpr if constexpr
 #else
 #define cxx17_constexpr
+#define cxx17_noexcept
+#define if_constexpr if
 #endif
 #endif /* cxx17_constexpr */
 
-#if __cplusplus >= 201402L
-#define constexpr_assert(foo) assert(foo)
+#if !defined(constexpr_assert) && defined(__cplusplus)
+#if defined(HAS_RELAXED_CONSTEXPR) ||                                          \
+    (__cplusplus >= 201408L && (!defined(_MSC_VER) || _MSC_VER >= 1915) &&     \
+     (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 6))
+#define constexpr_assert(cond) assert(cond)
 #else
-#define constexpr_assert(foo) __noop(foo)
-#endif /* constexpr_assert for C++14 */
+#define constexpr_assert(foo)
+#endif
+#endif /* constexpr_assert */
 
-//----------------------------------------------------------------------------
+#ifndef NDEBUG_CONSTEXPR
+#ifdef NDEBUG
+#define NDEBUG_CONSTEXPR constexpr
+#else
+#define NDEBUG_CONSTEXPR
+#endif
+#endif /* NDEBUG_CONSTEXPR */
+
+/* Crutch for case when OLD GLIBC++ (without std::max_align_t)
+ * is coupled with MODERN C++ COMPILER (with __cpp_aligned_new) */
+#ifndef ERTHINK_PROVIDE_ALIGNED_NEW
+#if defined(__cpp_aligned_new) &&                                              \
+    (!defined(__GLIBCXX__) || defined(_GLIBCXX_HAVE_ALIGNED_ALLOC))
+#define ERTHINK_PROVIDE_ALIGNED_NEW 1
+#else
+#define ERTHINK_PROVIDE_ALIGNED_NEW 0
+#endif
+#endif /* ERTHINK_PROVIDE_ALIGNED_NEW */
+
+#ifndef ERTHINK_NAME_PREFIX
+#ifdef __cplusplus
+#define ERTHINK_NAME_PREFIX(NAME) NAME
+#else
+#define ERTHINK_NAME_PREFIX(NAME) erthink_##NAME
+#endif
+#endif /* ERTHINK_NAME_PREFIX */
+
+#ifndef constexpr_intrin
+#ifdef __GNUC__
+#define constexpr_intrin constexpr
+#else
+#define constexpr_intrin
+#endif
+#endif /* constexpr_intrin */
+
+//------------------------------------------------------------------------------
 
 #if defined(__GNUC__) || __has_attribute(format)
 #define __printf_args(format_index, first_arg)                                 \
@@ -337,7 +403,7 @@
 #endif
 #endif /* __maybe_unused */
 
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef __dll_hidden
 #if defined(__GNUC__) || __has_attribute(visibility)
@@ -374,6 +440,14 @@
 #define __dll_import
 #endif
 #endif /* __dll_import */
+
+#ifndef __dll_visibility_default
+#if defined(__GNUC__) || __has_attribute(visibility)
+#define __dll_visibility_default __attribute__((visibility("default")))
+#else
+#define __dll_visibility_default
+#endif
+#endif /* __dll_visibility_default */
 
 //----------------------------------------------------------------------------
 
@@ -443,17 +517,17 @@ typedef __complex__ float __cfloat128 __attribute__((__mode__(__TC__)));
 typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
 #endif /* Workaround for Coverity Scan */
 
-#ifndef __aligned
-#if defined(__GNUC__) || defined(__clang__)
-#define __aligned(N) __attribute__((aligned(N)))
+#if !defined(alignas) && (!defined(__cplusplus) || __cplusplus < 201103L)
+#if defined(__GNUC__) || defined(__clang__) || __has_attribute(aligned)
+#define alignas(N) __attribute__((aligned(N)))
 #elif defined(_MSC_VER)
-#define __aligned(N) __declspec(align(N))
+#define alignas(N) __declspec(align(N))
 #else
-#define __aligned(N)
+#error "C++11 or C11 compiler is required"
 #endif
-#endif /* __align */
+#endif /* alignas */
 
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #if !defined(__typeof)
 #ifdef _MSC_VER
@@ -479,3 +553,34 @@ typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
 #define __MAKE_STR(x) #x
 #define STRINGIFY(x) __MAKE_STR(x)
 #endif /* STRINGIFY */
+
+//------------------------------------------------------------------------------
+
+#if defined(__cplusplus) && !defined(DEFINE_ENUM_FLAG_OPERATORS)
+// Define operator overloads to enable bit operations on enum values that are
+// used to define flags (based on Microsoft's DEFINE_ENUM_FLAG_OPERATORS).
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUM)                                       \
+  extern "C++" {                                                               \
+  constexpr inline ENUM operator|(ENUM a, ENUM b) {                            \
+    return ENUM(std::size_t(a) | std::size_t(b));                              \
+  }                                                                            \
+  cxx14_constexpr inline ENUM &operator|=(ENUM &a, ENUM b) {                   \
+    return a = a | b;                                                          \
+  }                                                                            \
+  constexpr inline ENUM operator&(ENUM a, ENUM b) {                            \
+    return ENUM(std::size_t(a) & std::size_t(b));                              \
+  }                                                                            \
+  cxx14_constexpr inline ENUM &operator&=(ENUM &a, ENUM b) {                   \
+    return a = a & b;                                                          \
+  }                                                                            \
+  constexpr inline ENUM operator~(ENUM a) { return ENUM(~std::size_t(a)); }    \
+  constexpr inline ENUM operator^(ENUM a, ENUM b) {                            \
+    return ENUM(std::size_t(a) ^ std::size_t(b));                              \
+  }                                                                            \
+  cxx14_constexpr inline ENUM &operator^=(ENUM &a, ENUM b) {                   \
+    return a = a ^ b;                                                          \
+  }                                                                            \
+  }
+#else                                    /* __cplusplus */
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUM) /* nope, C allows these operators */
+#endif                                   /* !__cplusplus */
