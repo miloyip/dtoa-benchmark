@@ -1,11 +1,11 @@
 <html>
 <head>
-<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-<script src="http://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['controls', 'charteditor']}]}"></script>
+<script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+<script src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['controls', 'charteditor']}]}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script>
 $(function() {
 	google.load("visualization", "1", {packages:["corechart"]});
@@ -117,14 +117,11 @@ $(function() {
 	});
 
   // Add configurations
-  var thisConfig = <?="\"".basename($argv[1], '.'.pathinfo($argv[1], PATHINFO_EXTENSION))."\""?>;
-  var configurations = [<?=
-    implode(",", 
-      array_map(
-        function ($filename) {
-          return "\"" . basename($filename, ".csv") . "\"";
-        }, glob("*.csv")))
-    ?>];
+  var thisConfig = <?= "\"" . basename($argv[1], '.' . pathinfo($argv[1], PATHINFO_EXTENSION)) . "\"" ?>;
+  var configurations = [<?= implode(",", array_map(function($filename)
+{
+    return "\"" . basename($filename, ".csv") . "\"";
+}, glob("*.csv"))) ?>];
 
   for (var i in configurations) {
     var c = configurations[i];
@@ -303,7 +300,7 @@ body { padding-top: 70px; }
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="https://github.com/miloyip/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
+      <a class="navbar-brand" href="https://github.com/leo-yuriev/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -320,17 +317,19 @@ body { padding-top: 70px; }
           </ul>
         </li>
       </ul>
-      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a></p>
+      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a> and <a href="https://github.com/leo-yuriev" class="navbar-link">Leonid Yuriev</a></p>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
 <div class="page-header">
-<h1 id="title"><?=basename($argv[1], '.'.pathinfo($argv[1], PATHINFO_EXTENSION))?></h1>
+<h1 id="title"><?= basename($argv[1], '.' . pathinfo($argv[1], PATHINFO_EXTENSION)) ?></h1>
 </div>
 <div id="main"></div>
 <h2>Source CSV</h2>
 <textarea id="textInput" class="form-control" rows="5" readonly>
-<?php include $argv[1] ?>
+<?php
+include $argv[1];
+?>
 </textarea>
 </div>
 <div class="row" id="downloadDD" style="display: none">

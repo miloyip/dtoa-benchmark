@@ -1,11 +1,11 @@
 <html>
 <head>
-<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-<script src="http://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['controls', 'charteditor']}]}"></script>
+<script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+<script src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['controls', 'charteditor']}]}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script>
 $(function() {
 	google.load("visualization", "1", {packages:["corechart"]});
@@ -117,8 +117,8 @@ $(function() {
 	});
 
   // Add configurations
-  var thisConfig = "unknown_mac64_clang10.0";
-  var configurations = ["corei7920@2.67_cygwin32_gcc4.8","corei7920@2.67_cygwin64_gcc4.8","corei7920@2.67_win32_vc2013","corei7920@2.67_win64_vc2013","unknown_mac32_clang7.0","unknown_mac64_clang10.0","unknown_mac64_clang7.0"];
+  var thisConfig = "randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1";
+  var configurations = ["randomdigit_i7-4600U@2.10_linux-x86_64-gcc8.3","randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1","sequental_i7-4600U@2.10_linux-x86_64-gcc8.3"];
 
   for (var i in configurations) {
     var c = configurations[i];
@@ -297,7 +297,7 @@ body { padding-top: 70px; }
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="https://github.com/miloyip/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
+      <a class="navbar-brand" href="https://github.com/leo-yuriev/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -314,187 +314,187 @@ body { padding-top: 70px; }
           </ul>
         </li>
       </ul>
-      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a></p>
+      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a> and <a href="https://github.com/leo-yuriev" class="navbar-link">Leonid Yuriev</a></p>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
 <div class="page-header">
-<h1 id="title">unknown_mac64_clang10.0</h1>
+<h1 id="title">randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1</h1>
 </div>
 <div id="main"></div>
 <h2>Source CSV</h2>
 <textarea id="textInput" class="form-control" rows="5" readonly>
 Type,Function,Digit,Time(ns)
-randomdigit,milo,1,52.900000
-randomdigit,milo,2,57.700000
-randomdigit,milo,3,60.900000
-randomdigit,milo,4,64.500000
-randomdigit,milo,5,68.200000
-randomdigit,milo,6,69.400000
-randomdigit,milo,7,71.200000
-randomdigit,milo,8,73.900000
-randomdigit,milo,9,73.300000
-randomdigit,milo,10,74.900000
-randomdigit,milo,11,77.700000
-randomdigit,milo,12,80.000000
-randomdigit,milo,13,82.200000
-randomdigit,milo,14,85.200000
-randomdigit,milo,15,88.200000
-randomdigit,milo,16,91.900000
-randomdigit,milo,17,94.600000
-randomdigit,null,1,1.200000
-randomdigit,null,2,1.200000
-randomdigit,null,3,1.200000
-randomdigit,null,4,1.200000
-randomdigit,null,5,1.200000
-randomdigit,null,6,1.200000
-randomdigit,null,7,1.200000
-randomdigit,null,8,1.200000
-randomdigit,null,9,1.200000
-randomdigit,null,10,1.300000
-randomdigit,null,11,1.500000
-randomdigit,null,12,1.300000
-randomdigit,null,13,1.200000
-randomdigit,null,14,1.300000
-randomdigit,null,15,1.300000
-randomdigit,null,16,1.300000
-randomdigit,null,17,1.300000
-randomdigit,ostrstream,1,1129.200000
-randomdigit,ostrstream,2,1114.000000
-randomdigit,ostrstream,3,1145.400000
-randomdigit,ostrstream,4,1160.900000
-randomdigit,ostrstream,5,1159.000000
-randomdigit,ostrstream,6,1168.700000
-randomdigit,ostrstream,7,1176.000000
-randomdigit,ostrstream,8,1198.600000
-randomdigit,ostrstream,9,1171.300000
-randomdigit,ostrstream,10,1162.600000
-randomdigit,ostrstream,11,1195.500000
-randomdigit,ostrstream,12,1203.600000
-randomdigit,ostrstream,13,1205.600000
-randomdigit,ostrstream,14,1201.500000
-randomdigit,ostrstream,15,1210.200000
-randomdigit,ostrstream,16,1209.500000
-randomdigit,ostrstream,17,1201.700000
-randomdigit,grisu2,1,95.100000
-randomdigit,grisu2,2,106.800000
-randomdigit,grisu2,3,105.200000
-randomdigit,grisu2,4,105.200000
-randomdigit,grisu2,5,106.700000
-randomdigit,grisu2,6,109.400000
-randomdigit,grisu2,7,111.700000
-randomdigit,grisu2,8,113.800000
-randomdigit,grisu2,9,115.100000
-randomdigit,grisu2,10,117.500000
-randomdigit,grisu2,11,118.500000
-randomdigit,grisu2,12,121.300000
-randomdigit,grisu2,13,122.200000
-randomdigit,grisu2,14,125.300000
-randomdigit,grisu2,15,127.800000
-randomdigit,grisu2,16,129.700000
-randomdigit,grisu2,17,135.700000
-randomdigit,emyg,1,46.600000
-randomdigit,emyg,2,52.400000
-randomdigit,emyg,3,55.000000
-randomdigit,emyg,4,58.800000
-randomdigit,emyg,5,62.100000
-randomdigit,emyg,6,63.700000
-randomdigit,emyg,7,64.900000
-randomdigit,emyg,8,66.400000
-randomdigit,emyg,9,65.400000
-randomdigit,emyg,10,66.100000
-randomdigit,emyg,11,67.700000
-randomdigit,emyg,12,70.100000
-randomdigit,emyg,13,72.100000
-randomdigit,emyg,14,74.400000
-randomdigit,emyg,15,77.000000
-randomdigit,emyg,16,84.500000
-randomdigit,emyg,17,82.100000
-randomdigit,ostringstream,1,1278.100000
-randomdigit,ostringstream,2,1257.000000
-randomdigit,ostringstream,3,1286.700000
-randomdigit,ostringstream,4,1291.700000
-randomdigit,ostringstream,5,1311.100000
-randomdigit,ostringstream,6,1327.500000
-randomdigit,ostringstream,7,1345.500000
-randomdigit,ostringstream,8,1360.500000
-randomdigit,ostringstream,9,1329.900000
-randomdigit,ostringstream,10,1301.400000
-randomdigit,ostringstream,11,1331.000000
-randomdigit,ostringstream,12,1391.800000
-randomdigit,ostringstream,13,1395.100000
-randomdigit,ostringstream,14,1364.200000
-randomdigit,ostringstream,15,1377.200000
-randomdigit,ostringstream,16,1390.900000
-randomdigit,ostringstream,17,1386.200000
-randomdigit,doubleconv,1,67.000000
-randomdigit,doubleconv,2,76.800000
-randomdigit,doubleconv,3,81.100000
-randomdigit,doubleconv,4,87.300000
-randomdigit,doubleconv,5,91.100000
-randomdigit,doubleconv,6,95.900000
-randomdigit,doubleconv,7,97.100000
-randomdigit,doubleconv,8,101.300000
-randomdigit,doubleconv,9,99.700000
-randomdigit,doubleconv,10,102.200000
-randomdigit,doubleconv,11,100.300000
-randomdigit,doubleconv,12,107.100000
-randomdigit,doubleconv,13,106.000000
-randomdigit,doubleconv,14,114.000000
-randomdigit,doubleconv,15,113.000000
-randomdigit,doubleconv,16,121.000000
-randomdigit,doubleconv,17,123.100000
-randomdigit,fpconv,1,99.300000
-randomdigit,fpconv,2,111.000000
-randomdigit,fpconv,3,120.300000
-randomdigit,fpconv,4,126.100000
-randomdigit,fpconv,5,132.700000
-randomdigit,fpconv,6,137.000000
-randomdigit,fpconv,7,140.900000
-randomdigit,fpconv,8,143.800000
-randomdigit,fpconv,9,141.900000
-randomdigit,fpconv,10,143.500000
-randomdigit,fpconv,11,144.900000
-randomdigit,fpconv,12,145.700000
-randomdigit,fpconv,13,148.000000
-randomdigit,fpconv,14,149.700000
-randomdigit,fpconv,15,150.700000
-randomdigit,fpconv,16,153.100000
-randomdigit,fpconv,17,159.200000
-randomdigit,sprintf,1,921.800000
-randomdigit,sprintf,2,920.500000
-randomdigit,sprintf,3,948.200000
-randomdigit,sprintf,4,967.500000
-randomdigit,sprintf,5,965.100000
-randomdigit,sprintf,6,975.700000
-randomdigit,sprintf,7,984.100000
-randomdigit,sprintf,8,995.100000
-randomdigit,sprintf,9,971.900000
-randomdigit,sprintf,10,975.300000
-randomdigit,sprintf,11,988.400000
-randomdigit,sprintf,12,1013.800000
-randomdigit,sprintf,13,1014.300000
-randomdigit,sprintf,14,1009.200000
-randomdigit,sprintf,15,1017.300000
-randomdigit,sprintf,16,1015.600000
-randomdigit,sprintf,17,1015.200000
-randomdigit,fmt,1,80.100000
-randomdigit,fmt,2,87.100000
-randomdigit,fmt,3,91.400000
-randomdigit,fmt,4,92.800000
-randomdigit,fmt,5,94.500000
-randomdigit,fmt,6,96.600000
-randomdigit,fmt,7,98.500000
-randomdigit,fmt,8,100.100000
-randomdigit,fmt,9,99.300000
-randomdigit,fmt,10,100.000000
-randomdigit,fmt,11,101.400000
-randomdigit,fmt,12,115.100000
-randomdigit,fmt,13,106.300000
-randomdigit,fmt,14,108.500000
-randomdigit,fmt,15,110.100000
-randomdigit,fmt,16,112.500000
-randomdigit,fmt,17,121.800000
+randomdigit,doubleconv,1,66.700000
+randomdigit,doubleconv,2,73.800000
+randomdigit,doubleconv,3,78.100000
+randomdigit,doubleconv,4,84.400000
+randomdigit,doubleconv,5,89.400000
+randomdigit,doubleconv,6,95.400000
+randomdigit,doubleconv,7,97.400000
+randomdigit,doubleconv,8,96.900000
+randomdigit,doubleconv,9,100.300000
+randomdigit,doubleconv,10,100.300000
+randomdigit,doubleconv,11,104.000000
+randomdigit,doubleconv,12,104.200000
+randomdigit,doubleconv,13,110.100000
+randomdigit,doubleconv,14,113.000000
+randomdigit,doubleconv,15,113.200000
+randomdigit,doubleconv,16,112.400000
+randomdigit,doubleconv,17,127.000000
+randomdigit,emyg,1,37.500000
+randomdigit,emyg,2,44.500000
+randomdigit,emyg,3,48.000000
+randomdigit,emyg,4,49.700000
+randomdigit,emyg,5,53.800000
+randomdigit,emyg,6,54.400000
+randomdigit,emyg,7,56.100000
+randomdigit,emyg,8,57.100000
+randomdigit,emyg,9,58.600000
+randomdigit,emyg,10,59.300000
+randomdigit,emyg,11,60.600000
+randomdigit,emyg,12,60.400000
+randomdigit,emyg,13,61.600000
+randomdigit,emyg,14,62.200000
+randomdigit,emyg,15,62.600000
+randomdigit,emyg,16,63.400000
+randomdigit,emyg,17,67.500000
+randomdigit,erthink,1,22.600000
+randomdigit,erthink,2,26.700000
+randomdigit,erthink,3,27.600000
+randomdigit,erthink,4,29.500000
+randomdigit,erthink,5,31.900000
+randomdigit,erthink,6,34.100000
+randomdigit,erthink,7,35.900000
+randomdigit,erthink,8,37.000000
+randomdigit,erthink,9,38.800000
+randomdigit,erthink,10,39.800000
+randomdigit,erthink,11,41.300000
+randomdigit,erthink,12,42.400000
+randomdigit,erthink,13,43.300000
+randomdigit,erthink,14,44.500000
+randomdigit,erthink,15,45.900000
+randomdigit,erthink,16,47.000000
+randomdigit,erthink,17,52.500000
+randomdigit,floaxie,1,24.600000
+randomdigit,floaxie,2,27.600000
+randomdigit,floaxie,3,31.600000
+randomdigit,floaxie,4,37.700000
+randomdigit,floaxie,5,43.800000
+randomdigit,floaxie,6,50.600000
+randomdigit,floaxie,7,57.400000
+randomdigit,floaxie,8,64.200000
+randomdigit,floaxie,9,71.100000
+randomdigit,floaxie,10,74.400000
+randomdigit,floaxie,11,76.800000
+randomdigit,floaxie,12,80.500000
+randomdigit,floaxie,13,84.300000
+randomdigit,floaxie,14,86.500000
+randomdigit,floaxie,15,88.700000
+randomdigit,floaxie,16,91.000000
+randomdigit,floaxie,17,92.200000
+randomdigit,fmt,1,79.600000
+randomdigit,fmt,2,84.900000
+randomdigit,fmt,3,88.300000
+randomdigit,fmt,4,90.500000
+randomdigit,fmt,5,93.000000
+randomdigit,fmt,6,94.100000
+randomdigit,fmt,7,97.200000
+randomdigit,fmt,8,98.300000
+randomdigit,fmt,9,100.400000
+randomdigit,fmt,10,101.600000
+randomdigit,fmt,11,104.200000
+randomdigit,fmt,12,105.600000
+randomdigit,fmt,13,107.700000
+randomdigit,fmt,14,110.100000
+randomdigit,fmt,15,111.900000
+randomdigit,fmt,16,114.300000
+randomdigit,fmt,17,121.100000
+randomdigit,fpconv,1,98.100000
+randomdigit,fpconv,2,108.400000
+randomdigit,fpconv,3,117.100000
+randomdigit,fpconv,4,122.400000
+randomdigit,fpconv,5,128.900000
+randomdigit,fpconv,6,134.500000
+randomdigit,fpconv,7,138.900000
+randomdigit,fpconv,8,141.300000
+randomdigit,fpconv,9,143.300000
+randomdigit,fpconv,10,144.200000
+randomdigit,fpconv,11,145.600000
+randomdigit,fpconv,12,147.500000
+randomdigit,fpconv,13,149.100000
+randomdigit,fpconv,14,153.200000
+randomdigit,fpconv,15,152.700000
+randomdigit,fpconv,16,154.400000
+randomdigit,fpconv,17,159.400000
+randomdigit,grisu2,1,94.500000
+randomdigit,grisu2,2,106.600000
+randomdigit,grisu2,3,104.900000
+randomdigit,grisu2,4,105.700000
+randomdigit,grisu2,5,107.400000
+randomdigit,grisu2,6,109.500000
+randomdigit,grisu2,7,112.000000
+randomdigit,grisu2,8,114.600000
+randomdigit,grisu2,9,116.800000
+randomdigit,grisu2,10,119.900000
+randomdigit,grisu2,11,121.800000
+randomdigit,grisu2,12,123.600000
+randomdigit,grisu2,13,125.700000
+randomdigit,grisu2,14,127.300000
+randomdigit,grisu2,15,129.800000
+randomdigit,grisu2,16,131.800000
+randomdigit,grisu2,17,136.600000
+randomdigit,milo,1,37.600000
+randomdigit,milo,2,45.200000
+randomdigit,milo,3,50.600000
+randomdigit,milo,4,49.700000
+randomdigit,milo,5,53.500000
+randomdigit,milo,6,54.000000
+randomdigit,milo,7,55.300000
+randomdigit,milo,8,56.600000
+randomdigit,milo,9,57.300000
+randomdigit,milo,10,58.300000
+randomdigit,milo,11,59.500000
+randomdigit,milo,12,60.300000
+randomdigit,milo,13,60.700000
+randomdigit,milo,14,61.300000
+randomdigit,milo,15,61.900000
+randomdigit,milo,16,63.000000
+randomdigit,milo,17,67.500000
+randomdigit,ryu,1,59.600000
+randomdigit,ryu,2,59.900000
+randomdigit,ryu,3,57.300000
+randomdigit,ryu,4,54.900000
+randomdigit,ryu,5,53.800000
+randomdigit,ryu,6,52.800000
+randomdigit,ryu,7,50.900000
+randomdigit,ryu,8,48.900000
+randomdigit,ryu,9,46.900000
+randomdigit,ryu,10,47.000000
+randomdigit,ryu,11,43.800000
+randomdigit,ryu,12,41.100000
+randomdigit,ryu,13,39.700000
+randomdigit,ryu,14,37.300000
+randomdigit,ryu,15,35.600000
+randomdigit,ryu,16,33.900000
+randomdigit,ryu,17,33.700000
+randomdigit,sprintf,1,679.300000
+randomdigit,sprintf,2,690.700000
+randomdigit,sprintf,3,696.700000
+randomdigit,sprintf,4,704.400000
+randomdigit,sprintf,5,709.100000
+randomdigit,sprintf,6,723.200000
+randomdigit,sprintf,7,738.900000
+randomdigit,sprintf,8,741.500000
+randomdigit,sprintf,9,750.600000
+randomdigit,sprintf,10,755.400000
+randomdigit,sprintf,11,773.000000
+randomdigit,sprintf,12,773.400000
+randomdigit,sprintf,13,785.200000
+randomdigit,sprintf,14,790.800000
+randomdigit,sprintf,15,800.600000
+randomdigit,sprintf,16,779.500000
+randomdigit,sprintf,17,791.600000
 </textarea>
 </div>
 <div class="row" id="downloadDD" style="display: none">
