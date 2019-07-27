@@ -1,6 +1,6 @@
 # dtoa Benchmark
 
-Copyright(c) 2019 Leonid Yuriev <leo@yuriev.ru>,
+Copyright(c) 2019-2020 Leonid Yuriev <leo@yuriev.ru>,
 Copyright(c) 2014 Milo Yip <miloyip@gmail.com>
 
 ## Introduction
@@ -102,3 +102,8 @@ ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)
 ## Related Benchmarks and Discussions
 
 * [Printing Floating-Point Numbers](http://www.ryanjuckett.com/programming/printing-floating-point-numbers/)
+
+--------------------------------------------------------------------------------
+
+### The [repository now only mirrored on the Github](https://abf.io/erthink/d2a-benchmark) due to illegal discriminatory restrictions for Russian Crimea and for sovereign crimeans.
+<!-- Required extensions: pymdownx.betterem, pymdownx.tilde, pymdownx.emoji, pymdownx.tasklist, pymdownx.superfences -->
