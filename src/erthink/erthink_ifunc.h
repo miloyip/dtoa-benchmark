@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
  * and https://sourceware.org/glibc/wiki/GNU_IFUNC */
 
 #ifndef ERTHINK_USE_ELF_IFUNC
-#if __has_attribute(ifunc) &&                                                  \
+#if __has_attribute(__ifunc__) &&                                              \
     defined(__ELF__) /* ifunc is broken on Darwin/OSX */
 /* Use ifunc/gnu_indirect_function if corresponding attribute is available,
  * Assuming compiler will generate properly code even when
@@ -51,7 +51,7 @@
                               RESOLVER)                                        \
   __extern_C API_VISIBILITY RESULT_TYPE NAME DECLARGS_PARENTHESIZED;
 
-#if __has_attribute(ifunc) ||                                                  \
+#if __has_attribute(__ifunc__) ||                                              \
     (defined(__ELF__) && __GLIBC_PREREQ(2, 11) && __GNUC_PREREQ(4, 6))
 
 #define ERTHINK_DEFINE_IFUNC(API_VISIBILITY, RESULT_TYPE, NAME,                \
@@ -59,10 +59,11 @@
                              RESOLVER)                                         \
                                                                                \
   ERTHINK_IFUNC_RESOLVER_API(API_VISIBILITY)                                   \
-  __attribute__((used)) RESULT_TYPE(*RESOLVER(void)) DECLARGS_PARENTHESIZED;   \
+  __attribute__((__used__)) RESULT_TYPE(*RESOLVER(void))                       \
+      DECLARGS_PARENTHESIZED;                                                  \
                                                                                \
   __extern_C API_VISIBILITY RESULT_TYPE NAME DECLARGS_PARENTHESIZED            \
-      __attribute__((ifunc(STRINGIFY(RESOLVER))));
+      __attribute__((__ifunc__(STRINGIFY(RESOLVER))));
 
 #else
 
@@ -81,7 +82,7 @@
 /* *INDENT-ON* */
 /* clang-format on */
 
-#endif /* __has_attribute(ifunc) */
+#endif /* __has_attribute(__ifunc__) */
 
 #else /* ERTHINK_USE_ELF_IFUNC */
 #define ERTHINK_IFUNC_RESOLVER_API(API) static
@@ -121,7 +122,7 @@
     return NAME##_iFuncPtr CALLARGS_PARENTHESIZED;                             \
   }
 
-#if __GNUC_PREREQ(4, 0) || __has_attribute(constructor)
+#if __GNUC_PREREQ(4, 0) || __has_attribute(__constructor__)
 
 #define ERTHINK_DEFINE_IFUNC(API_VISIBILITY, RESULT_TYPE, NAME,                \
                              DECLARGS_PARENTHESIZED, CALLARGS_PARENTHESIZED,   \
@@ -132,11 +133,12 @@
   ERTHINK_IFUNC_RESOLVER_API(API_VISIBILITY)                                   \
   RESULT_TYPE(*RESOLVER(void)) DECLARGS_PARENTHESIZED;                         \
                                                                                \
-  static __cold void __attribute__((constructor)) NAME##_iFunc_init(void) {    \
+  static __cold void __attribute__((__constructor__))                          \
+      NAME##_iFunc_init(void) {                                                \
     NAME##_iFuncPtr = RESOLVER();                                              \
   }
 
-#else /* __has_attribute(constructor) */
+#else /* __has_attribute(__constructor__) */
 
 #define ERTHINK_DEFINE_IFUNC(API_VISIBILITY, RESULT_TYPE, NAME,                \
                              DECLARGS_PARENTHESIZED, CALLARGS_PARENTHESIZED,   \
@@ -152,7 +154,7 @@
                                                                                \
   RESULT_TYPE(*NAME##_iFuncPtr) DECLARGS_PARENTHESIZED = NAME##_proxy;
 
-#endif /* __has_attribute(constructor) */
+#endif /* __has_attribute(__constructor__) */
 
 #endif /* __cplusplus */
 

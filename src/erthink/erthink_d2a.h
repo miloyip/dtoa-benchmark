@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,6 +43,22 @@
 //------------------------------------------------------------------------------
 
 namespace erthink {
+
+/* The ERTHINK_D2A_PEDANTRY_ACCURATE macro allows you to control the trade-off
+ * between conversion speed and accuracy:
+ *
+ *  - Define it to non-zero for accurately conversion to impeccable string
+ *    representation, which will be a nearest to the actual binary value.
+ *
+ *  - Otherwise (if ERTHINK_D2A_PEDANTRY_ACCURATE undefiner or defined to zero)
+ *    the conversion will be slightly faster and the result will also be correct
+ *    (inverse conversion via stdtod() will give the original value).
+ *    However, the string representation will be slightly larger than the ideal
+ *    nearest value. */
+
+#ifndef ERTHINK_D2A_PEDANTRY_ACCURATE
+#define ERTHINK_D2A_PEDANTRY_ACCURATE 0
+#endif
 
 #ifndef NAMESPACE_ERTHINK_D2A_DETAILS
 #define NAMESPACE_ERTHINK_D2A_DETAILS /* anonymous */
@@ -110,15 +126,6 @@ enum {
   GRISU_EXPONENT_BIAS = IEEE754_DOUBLE_BIAS + IEEE754_DOUBLE_MANTISSA_SIZE
 };
 
-union casting_union {
-  double f;
-  int64_t i;
-  uint64_t u;
-  constexpr casting_union(double v) : f(v) {}
-  constexpr casting_union(uint64_t v) : u(v) {}
-  constexpr casting_union(int64_t v) : i(v) {}
-};
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4820 /* FOO bytes padding added                      \
@@ -128,9 +135,9 @@ struct diy_fp {
   uint64_t f;
   int e;
 
-  explicit diy_fp(const casting_union &value) {
-    const uint64_t exp_bits = (value.u & IEEE754_DOUBLE_EXPONENT_MASK);
-    const uint64_t mantissa = (value.u & IEEE754_DOUBLE_MANTISSA_MASK);
+  explicit diy_fp(const int64_t i64) {
+    const uint64_t exp_bits = (i64 & IEEE754_DOUBLE_EXPONENT_MASK);
+    const uint64_t mantissa = (i64 & IEEE754_DOUBLE_MANTISSA_MASK);
     f = mantissa + (exp_bits ? IEEE754_DOUBLE_IMPLICIT_LEAD : 0u);
     e = static_cast<int>(exp_bits >> IEEE754_DOUBLE_MANTISSA_SIZE) -
         (exp_bits ? GRISU_EXPONENT_BIAS : GRISU_EXPONENT_BIAS - 1);
@@ -261,27 +268,34 @@ static diy_fp cached_power(const int in_exp2, int &out_exp10) {
   return diy_fp(power10_mas[index], power10_exp2[index]);
 }
 
-static inline void round(char *end, uint64_t delta, uint64_t rest,
-                         uint64_t ten_kappa, uint64_t upper) {
+#if ERTHINK_D2A_PEDANTRY_ACCURATE
+static __always_inline void round(char *end, uint64_t delta, uint64_t rest,
+                                  uint64_t ten_kappa, uint64_t upper) {
   while (rest < upper && delta - rest >= ten_kappa &&
          (rest + ten_kappa < upper || /* closer */
           upper - rest > rest + ten_kappa - upper)) {
+    assert(end[-1] > '0');
     end[-1] -= 1;
     rest += ten_kappa;
   }
 }
+#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
 
-static inline char *make_digits(const diy_fp &v, const diy_fp &upper,
-                                uint64_t delta, char *const buffer,
-                                int &inout_exp10) {
-  const unsigned shift = unsigned(-upper.e);
+static inline char *make_digits(const diy_fp &value, uint64_t delta,
+                                char *const buffer, int &inout_exp10,
+                                const diy_fp &baseline) {
+  const unsigned shift = unsigned(-value.e);
   const uint64_t mask = UINT64_MAX >> (64 - shift);
   char *ptr = buffer;
-  const diy_fp gap = upper - v;
+#if ERTHINK_D2A_PEDANTRY_ACCURATE
+  const diy_fp gap = value - baseline;
+#else
+  (void)baseline;
+#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
 
-  assert((upper.f >> shift) <= UINT_E9);
-  uint_fast32_t digit, body = static_cast<uint_fast32_t>(upper.f >> shift);
-  uint64_t tail = upper.f & mask;
+  assert((value.f >> shift) <= UINT_E9);
+  uint_fast32_t digit, body = static_cast<uint_fast32_t>(value.f >> shift);
+  uint64_t tail = value.f & mask;
   int kappa = dec_digits(body);
   assert(kappa > 0);
 
@@ -329,11 +343,14 @@ static inline char *make_digits(const diy_fp &v, const diy_fp &upper,
     case 0:
       digit = body;
       if (unlikely(tail < delta)) {
-      early:
+      early_last:
         *ptr++ = static_cast<char>(digit + '0');
+      early_skip:
         inout_exp10 += kappa;
+#if ERTHINK_D2A_PEDANTRY_ACCURATE
         assert(kappa >= 0);
         round(ptr, delta, tail, dec_power(unsigned(kappa)) << shift, gap.f);
+#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
         return ptr;
       }
 
@@ -347,11 +364,6 @@ static inline char *make_digits(const diy_fp &v, const diy_fp &upper,
         tail &= mask;
       }
     }
-
-    const uint64_t left = (static_cast<uint64_t>(body) << shift) + tail;
-    if (unlikely(left < delta))
-      goto early;
-
   } while (unlikely(digit == 0));
 
   while (true) {
@@ -402,8 +414,12 @@ static inline char *make_digits(const diy_fp &v, const diy_fp &upper,
     }
 
     const uint64_t left = (static_cast<uint64_t>(body) << shift) + tail;
-    if (unlikely(left < delta))
-      goto early;
+    if (unlikely(left < delta)) {
+      if (likely(digit))
+        goto early_last;
+      ++kappa;
+      goto early_skip;
+    }
   }
 
 done:
@@ -418,9 +434,11 @@ done:
   }
 
   inout_exp10 += kappa;
+#if ERTHINK_D2A_PEDANTRY_ACCURATE
   assert(kappa >= -19 && kappa <= 0);
   const uint64_t unit = dec_power(unsigned(-kappa));
   round(ptr, delta, tail, mask + 1, gap.f * unit);
+#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
   return ptr;
 }
 
@@ -432,7 +450,8 @@ static inline char *convert(diy_fp v, char *const buffer, int &out_exp10) {
   }
 
   const int left = clz64(v.f);
-#if 0
+#if 0 /* Given the remaining optimizations, on average it does not have a      \
+         positive effect, although a little faster in the simplest cases. */
   // LY: check to output as ordinal
   if (unlikely(v.e >= -52 && v.e <= left && (v.e >= 0 || (v.f << (64 + v.e)) == 0))) {
     uint64_t ordinal = (v.e < 0) ? v.f >> -v.e : v.f << v.e;
@@ -446,33 +465,53 @@ static inline char *convert(diy_fp v, char *const buffer, int &out_exp10) {
   assert(v.f <= UINT64_MAX / 2 && left > 1);
   v.e -= left;
   v.f <<= left;
+  const diy_fp dec_factor = cached_power(v.e, out_exp10);
 
   // LY: get boundaries
   const int mojo = v.f >= UINT64_C(0x8000000080000000) ? left - 1 : left - 2;
   const uint64_t half_epsilon = UINT64_C(1) << mojo;
   diy_fp upper(v.f + half_epsilon, v.e);
   diy_fp lower(v.f - half_epsilon, v.e);
-
-  const diy_fp dec_factor = cached_power(upper.e, out_exp10);
   upper.scale(dec_factor, false);
   lower.scale(dec_factor, true);
-  v = diy_fp::middle(upper, lower);
   --upper.f;
   assert(upper.f > lower.f);
-  return make_digits(v, upper, upper.f - lower.f - 1, buffer, out_exp10);
+  return make_digits(upper, upper.f - lower.f - 1, buffer, out_exp10,
+                     diy_fp::middle(upper, lower));
+}
+
+double inline cast(int64_t i64) {
+  static_assert(sizeof(double) == 8 && sizeof(int64_t), "WTF?");
+  double f64;
+  std::memcpy(&f64, &i64, 8);
+  return f64;
+}
+
+double inline cast(uint64_t u64) {
+  static_assert(sizeof(double) == 8 && sizeof(uint64_t), "WTF?");
+  double f64;
+  std::memcpy(&f64, &u64, 8);
+  return f64;
+}
+
+int64_t inline cast(double f64) {
+  static_assert(sizeof(double) == 8 && sizeof(int64_t), "WTF?");
+  int64_t i64;
+  std::memcpy(&i64, &f64, 8);
+  return i64;
 }
 
 } // namespace grisu
 
 static __maybe_unused char *
-d2a(const grisu::casting_union &value,
+d2a(const double &value,
     char *const buffer /* upto 23 chars for -22250738585072014e-324 */) {
-  assert(!std::isnan(value.f) && !std::isinf(value.f));
+  assert(!std::isnan(value) && !std::isinf(value));
+  const int64_t i64 = grisu::cast(value);
   // LY: strive for branchless (SSA-optimizer must solve this)
   *buffer = '-';
   int exponent;
-  char *ptr =
-      grisu::convert(grisu::diy_fp(value), buffer + (value.i < 0), exponent);
+  char *ptr = grisu::convert(grisu::diy_fp(i64), buffer + (i64 < 0), exponent);
   if (exponent != 0) {
     const branchless_abs<int> pair(exponent);
     ptr[0] = 'e';

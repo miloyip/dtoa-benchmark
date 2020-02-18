@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <malloc.h>
 #endif
 
+#include <algorithm>
 #include <deque>
 #include <memory>
 #include <stack>
@@ -45,6 +46,7 @@ typedef ::testing::Types<
 template <typename TypeParam> class ShortAlloc : public ::testing::Test {};
 #ifdef TYPED_TEST_SUITE_P
 TYPED_TEST_SUITE_P(ShortAlloc);
+TYPED_TEST_SUITE(ShortAlloc, Sizes);
 #else
 TYPED_TEST_CASE_P(ShortAlloc);
 TYPED_TEST_CASE(ShortAlloc, Sizes);

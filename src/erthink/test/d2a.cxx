@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,6 +39,35 @@ __hot __dll_export __noinline char *_d2a(const double value, char *ptr) {
 
 //------------------------------------------------------------------------------
 
+// #define SHOW_LAST_DIGIT_ROUNDING_INACCURACY
+#ifdef SHOW_LAST_DIGIT_ROUNDING_INACCURACY
+static std::tuple<bool, int, int> mantissa_str_diff(const char *a,
+                                                    const char *b) {
+  int i = 0, j = 0;
+  for (;;) {
+    if (a[i] == '.')
+      i++;
+    const bool a_end = (a[i] == 'e' || a[i] == 'E' || a[i] == '\0');
+
+    if (b[j] == '.')
+      j++;
+    const bool b_end = (b[j] == 'e' || b[j] == 'E' || b[j] == '\0');
+
+    if (a_end && b_end)
+      break;
+
+    const char a_digit = a_end ? '0' : a[i];
+    const char b_digit = b_end ? '0' : b[j];
+    if (a_digit != b_digit)
+      return std::make_tuple(true, i, j);
+
+    i += !a_end;
+    j += !b_end;
+  }
+  return std::make_tuple(false, 0, 0);
+}
+#endif /* SHOW_LAST_DIGIT_ROUNDING_INACCURACY */
+
 static void probe_d2a(char (&buffer)[23 + 1], const double value) {
   char *d2a_end = _d2a(value, buffer);
   ASSERT_LT(buffer, d2a_end);
@@ -49,6 +78,29 @@ static void probe_d2a(char (&buffer)[23 + 1], const double value) {
   double probe = strtod(buffer, &strtod_end);
   EXPECT_EQ(d2a_end, strtod_end);
   EXPECT_EQ(value, probe);
+
+#ifdef SHOW_LAST_DIGIT_ROUNDING_INACCURACY
+  int i = 0;
+  const char *s = buffer;
+  for (;;) {
+    if (*s == '-' || *s == '.')
+      s++;
+    else if (s[i] >= '0' && s[i] <= '9')
+      i++;
+    else
+      break;
+  }
+  char print_buffer[32];
+  snprintf(print_buffer, sizeof(print_buffer), "%.*e", i - 1, value);
+  const auto diff = mantissa_str_diff(buffer, print_buffer);
+  if (std::get<0>(diff)) {
+    printf("d2a:%s <> printf:%s\n"
+           "%*c%*c\n",
+           buffer, print_buffer, std::get<1>(diff) + 5, '^',
+           std::get<2>(diff) + 16, '^');
+    fflush(nullptr);
+  }
+#endif /* SHOW_LAST_DIGIT_ROUNDING_INACCURACY */
 }
 
 TEST(d2a, trivia) {
@@ -94,16 +146,16 @@ TEST(d2a, trivia) {
 }
 
 static bool probe_d2a(uint64_t u64, char (&buffer)[23 + 1]) {
-  erthink::grisu::casting_union casting(u64);
-  switch (std::fpclassify(casting.f)) {
+  const double f64 = erthink::grisu::cast(u64);
+  switch (std::fpclassify(f64)) {
   case FP_NAN:
   case FP_INFINITE:
     return false;
   default:
-    probe_d2a(buffer, casting.f);
+    probe_d2a(buffer, f64);
   }
 
-  const float f32 = static_cast<float>(casting.f);
+  const float f32 = static_cast<float>(f64);
   switch (std::fpclassify(f32)) {
   case FP_NAN:
   case FP_INFINITE:

@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 2019-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ public:
     std::memset(buf_, 0x55, sizeof(buf_));
 #endif
   }
-  void NDEBUG_CONSTEXPR debug_check() const {
+  void NDEBUG_CONSTEXPR debug_check() const noexcept {
     assert(checkpoint_A_ == signature_A);
     assert(checkpoint_B_ == signature_B);
     assert(checkpoint_C_ == signature_C);

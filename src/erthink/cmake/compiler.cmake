@@ -1,4 +1,4 @@
-﻿##  Copyright (c) 2012-2019 Leonid Yuriev <leo@yuriev.ru>.
+﻿##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -16,6 +16,11 @@
 cmake_minimum_required(VERSION 3.8.2)
 cmake_policy(PUSH)
 cmake_policy(VERSION 3.8.2)
+
+if (CMAKE_VERSION MATCHES ".*MSVC.*")
+  message(FATAL_ERROR "CMake from MSVC kit is unfit! "
+    "Please use the original CMake from https://cmake.org/download/")
+endif()
 
 if (NOT (CMAKE_C_COMPILER_LOADED OR CMAKE_CXX_COMPILER_LOADED))
   message(FATAL_ERROR "This module required C or C++ to be enabled")
@@ -155,12 +160,12 @@ elseif(CMAKE_COMPILER_IS_ELBRUSC OR CMAKE_SYSTEM_PROCESSOR MATCHES "e2k.*|E2K.*|
   set(E2K TRUE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
   set(X86_64 TRUE)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*|amd64.*|AMD64.*")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
   set(X86_32 TRUE)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|ARM64.*)")
+  set(AARCH64 TRUE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
   set(ARM32 TRUE)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)")
-  set(AARCH64 TRUE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64le.*")
   set(PPC64LE TRUE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64.*")
@@ -347,6 +352,18 @@ if(CMAKE_COMPILER_IS_CLANG)
       (CMAKE_CLANG_LD AND CMAKE_CLANG_AR AND CMAKE_CLANG_NM AND CMAKE_CLANG_RANLIB))
     set(CLANG_LTO_AVAILABLE TRUE)
     message(STATUS "Link-Time Optimization by CLANG/LLVM is available")
+  elseif(CMAKE_TOOLCHAIN_FILE AND NOT CMAKE_${CMAKE_PRIMARY_LANG}_COMPILER_VERSION VERSION_LESS 7.0)
+    set(CLANG_LTO_AVAILABLE TRUE)
+    if (NOT CMAKE_CLANG_AR)
+      set(CMAKE_CLANG_AR ${CMAKE_AR})
+    endif()
+    if (NOT CMAKE_CLANG_NM)
+      set(CMAKE_CLANG_NM ${CMAKE_NM})
+    endif()
+    if (NOT CMAKE_CLANG_RANLIB)
+      set(CMAKE_CLANG_RANLIB ${CMAKE_RANLIB })
+    endif()
+    message(STATUS "Assume Link-Time Optimization by CLANG/LLVM is available via ${CMAKE_TOOLCHAIN_FILE}")
   else()
     set(CLANG_LTO_AVAILABLE FALSE)
     message(STATUS "Link-Time Optimization by CLANG/LLVM is NOT available")

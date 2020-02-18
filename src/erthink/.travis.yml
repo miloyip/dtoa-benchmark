@@ -16,7 +16,7 @@ compiler:
 
 os:
   - linux
-#  - osx
+  - osx
 
 script: >
   cmake --version &&

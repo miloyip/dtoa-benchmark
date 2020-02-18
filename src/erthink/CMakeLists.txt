@@ -1,4 +1,4 @@
-﻿##  Copyright (c) 2012-2019 Leonid Yuriev <leo@yuriev.ru>.
+﻿##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 ##
 ##  This CMakeLists.txt required for testing, but most things are header-only.
-##  https://github.com/leo-yuriev/erthink
+##  https://github.com/erthink/erthink
 ##
 
 cmake_minimum_required(VERSION 3.8.2)

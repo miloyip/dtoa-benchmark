@@ -1,4 +1,4 @@
-﻿##  Copyright (c) 2012-2019 Leonid Yuriev <leo@yuriev.ru>.
+﻿##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -17,6 +17,15 @@ cmake_minimum_required(VERSION 3.8.2)
 include(CTest)
 if(BUILD_TESTING)
   cmake_policy(PUSH)
+
+  cmake_policy(SET CMP0054 NEW)
+  if(NOT CMAKE_VERSION VERSION_LESS 3.9)
+    cmake_policy(SET CMP0068 NEW)
+    cmake_policy(SET CMP0069 NEW)
+  endif()
+  if(NOT CMAKE_VERSION VERSION_LESS 3.12)
+    cmake_policy(SET CMP0075 NEW)
+  endif()
 
   # Expected GTest was already found and/or pointed via ${gtest_root},
   # otherwise will search at ${gtest_paths} locations, if defined or default ones.
@@ -94,6 +103,25 @@ if(BUILD_TESTING)
           endif()
         endif()
       endif()
+
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 local_HAS_CXX17)
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 local_HAS_CXX14)
+
+      if(NOT DEFINED GTEST_CXX_STANDARD)
+        if(DEFINED CMAKE_CXX_STANDARD)
+          set(GTEST_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+        elseif(NOT local_HAS_CXX17 LESS 0)
+          set(GTEST_CXX_STANDARD 17)
+        elseif(NOT local_HAS_CXX14 LESS 0)
+          set(GTEST_CXX_STANDARD 14)
+        else()
+          set(GTEST_CXX_STANDARD 11)
+        endif()
+      endif()
+      message(STATUS "Use C++${GTEST_CXX_STANDARD} for GoogleTest")
+
+      target_compile_features(gtest PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
+      target_compile_features(gtest_main PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
 
       if(CC_HAS_WERROR)
         if(MSVC)

@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
                                    mode specified; termination on exception    \
                                    is not guaranteed. Specify /EHsc */
 #endif
+
 #if defined(__KERNEL__) || !defined(__cplusplus) || __cplusplus < 201103L
 #include <assert.h>
 #include <stddef.h>
@@ -39,6 +40,13 @@
 #include <cstddef>
 #include <cstdint>
 #endif
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) ||     \
+    defined(__BSD__) || defined(__NETBSD__) || defined(__bsdi__) ||            \
+    defined(__DragonFly__)
+#include </usr/include/sys/cdefs.h>
+#endif /* BSD */
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -146,7 +154,7 @@
 #elif __GNUC_PREREQ(8, 0) && defined(__cplusplus) && __cplusplus >= 201103L
 #define __fallthrough [[fallthrough]]
 #elif __GNUC_PREREQ(7, 0)
-#define __fallthrough __attribute__((fallthrough))
+#define __fallthrough __attribute__((__fallthrough__))
 #elif defined(__clang__) && defined(__cplusplus) && __cplusplus >= 201103L &&  \
     __has_feature(cxx_attributes) && __has_warning("-Wimplicit-fallthrough")
 #define __fallthrough [[clang::fallthrough]]
@@ -238,9 +246,9 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(__GNUC__) || __has_attribute(format)
+#if defined(__GNUC__) || __has_attribute(__format__)
 #define __printf_args(format_index, first_arg)                                 \
-  __attribute__((format(printf, format_index, first_arg)))
+  __attribute__((__format__(__printf__, format_index, first_arg)))
 #else
 #define __printf_args(format_index, first_arg)
 #endif
@@ -250,8 +258,8 @@
 #endif /* __thread */
 
 #ifndef __always_inline
-#if defined(__GNUC__) || __has_attribute(always_inline)
-#define __always_inline __inline __attribute__((always_inline))
+#if defined(__GNUC__) || __has_attribute(__always_inline__)
+#define __always_inline __inline __attribute__((__always_inline__))
 #elif defined(_MSC_VER)
 #define __always_inline __forceinline
 #else
@@ -260,16 +268,16 @@
 #endif /* __always_inline */
 
 #ifndef __must_check_result
-#if defined(__GNUC__) || __has_attribute(warn_unused_result)
-#define __must_check_result __attribute__((warn_unused_result))
+#if defined(__GNUC__) || __has_attribute(__warn_unused_result__)
+#define __must_check_result __attribute__((__warn_unused_result__))
 #else
 #define __must_check_result
 #endif
 #endif /* __must_check_result */
 
 #ifndef __deprecated
-#if defined(__GNUC__) || __has_attribute(deprecated)
-#define __deprecated __attribute__((deprecated))
+#if defined(__GNUC__) || __has_attribute(__deprecated__)
+#define __deprecated __attribute__((__deprecated__))
 #elif defined(_MSC_VER)
 #define __deprecated __declspec(deprecated)
 #else
@@ -278,8 +286,8 @@
 #endif /* __deprecated */
 
 #ifndef __noreturn
-#if defined(__GNUC__) || __has_attribute(noreturn)
-#define __noreturn __attribute__((noreturn))
+#if defined(__GNUC__) || __has_attribute(__noreturn__)
+#define __noreturn __attribute__((__noreturn__))
 #elif defined(_MSC_VER)
 #define __noreturn __declspec(noreturn)
 #else
@@ -288,8 +296,14 @@
 #endif /* __noreturn */
 
 #ifndef __nothrow
-#if defined(__GNUC__) || __has_attribute(nothrow)
-#define __nothrow __attribute__((nothrow))
+#if defined(__cplusplus)
+#if __cplusplus < 201703L
+#define __nothrow throw()
+#else
+#define __nothrow noexcept(true)
+#endif /* __cplusplus */
+#elif defined(__GNUC__) || __has_attribute(__nothrow__)
+#define __nothrow __attribute__((__nothrow__))
 #elif defined(_MSC_VER) && defined(__cplusplus)
 #define __nothrow __declspec(nothrow)
 #else
@@ -303,8 +317,8 @@
  * Such a function can be subject to common subexpression elimination
  * and loop optimization just as an arithmetic operator would be.
  * These functions should be declared with the attribute pure. */
-#if defined(__GNUC__) || __has_attribute(pure)
-#define __pure_function __attribute__((pure))
+#if defined(__GNUC__) || __has_attribute(__pure__)
+#define __pure_function __attribute__((__pure__))
 #else
 #define __pure_function
 #endif
@@ -320,8 +334,8 @@
  * data pointed to must not be declared const. Likewise, a function
  * that calls a non-const function usually must not be const.
  * It does not make sense for a const function to return void. */
-#if defined(__GNUC__) || __has_attribute(const)
-#define __const_function __attribute__((const))
+#if defined(__GNUC__) || __has_attribute(__const__)
+#define __const_function __attribute__((__const__))
 #else
 #define __const_function
 #endif
@@ -329,10 +343,8 @@
 
 #ifndef __optimize
 #if defined(__OPTIMIZE__)
-#if defined(__clang__) && !__has_attribute(optimize)
-#define __optimize(ops)
-#elif defined(__GNUC__) || __has_attribute(optimize)
-#define __optimize(ops) __attribute__((optimize(ops)))
+#if (defined(__GNUC__) && !defined(__clang__)) || __has_attribute(__optimize__)
+#define __optimize(ops) __attribute__((__optimize__(ops)))
 #else
 #define __optimize(ops)
 #endif
@@ -344,12 +356,14 @@
 #ifndef __hot
 #if defined(__OPTIMIZE__)
 #if defined(__e2k__)
-#define __hot __attribute__((hot)) __optimize(3)
-#elif defined(__clang__) && !__has_attribute(hot)
+#define __hot __attribute__((__hot__)) __optimize(3)
+#elif defined(__clang__) && !__has_attribute(__hot__) &&                       \
+    __has_attribute(__section__) &&                                            \
+    (defined(__linux__) || defined(__gnu_linux__))
 /* just put frequently used functions in separate section */
-#define __hot __attribute__((section("text.hot"))) __optimize("O3")
-#elif defined(__GNUC__) || __has_attribute(hot)
-#define __hot __attribute__((hot)) __optimize("O3")
+#define __hot __attribute__((__section__("text.hot"))) __optimize("O3")
+#elif defined(__GNUC__) || __has_attribute(__hot__)
+#define __hot __attribute__((__hot__)) __optimize("O3")
 #else
 #define __hot __optimize("O3")
 #endif
@@ -361,12 +375,14 @@
 #ifndef __cold
 #if defined(__OPTIMIZE__)
 #if defined(__e2k__)
-#define __cold __optimize(1) __attribute__((cold))
-#elif defined(__clang__) && !__has_attribute(cold)
+#define __cold __optimize(1) __attribute__((__cold__))
+#elif defined(__clang__) && !__has_attribute(__cold__) &&                      \
+    __has_attribute(__section__) &&                                            \
+    (defined(__linux__) || defined(__gnu_linux__))
 /* just put infrequently used functions in separate section */
-#define __cold __attribute__((section("text.unlikely"))) __optimize("Os")
-#elif defined(__GNUC__) || __has_attribute(cold)
-#define __cold __attribute__((cold)) __optimize("Os")
+#define __cold __attribute__((__section__("text.unlikely"))) __optimize("Os")
+#elif defined(__GNUC__) || __has_attribute(__cold__)
+#define __cold __attribute__((__cold__)) __optimize("Os")
 #else
 #define __cold __optimize("Os")
 #endif
@@ -376,28 +392,26 @@
 #endif /* __cold */
 
 #ifndef __flatten
-#if defined(__OPTIMIZE__) && (defined(__GNUC__) || __has_attribute(flatten))
-#define __flatten __attribute__((flatten))
+#if defined(__OPTIMIZE__) && (defined(__GNUC__) || __has_attribute(__flatten__))
+#define __flatten __attribute__((__flatten__))
 #else
 #define __flatten
 #endif
 #endif /* __flatten */
 
 #ifndef __noinline
-#if defined(__GNUC__) || __has_attribute(noinline)
-#define __noinline __attribute__((noinline))
+#if defined(__GNUC__) || __has_attribute(__noinline__)
+#define __noinline __attribute__((__noinline__))
 #elif defined(_MSC_VER)
 #define __noinline __declspec(noinline)
-#elif defined(__SUNPRO_C) || defined(__sun) || defined(sun)
-#define __noinline inline
-#elif !defined(__INTEL_COMPILER)
-#define __noinline /* FIXME ? */
+#else
+#define __noinline
 #endif
 #endif /* __noinline */
 
 #ifndef __maybe_unused
-#if defined(__GNUC__) || __has_attribute(unused)
-#define __maybe_unused __attribute__((unused))
+#if defined(__GNUC__) || __has_attribute(__unused__)
+#define __maybe_unused __attribute__((__unused__))
 #else
 #define __maybe_unused
 #endif
@@ -405,23 +419,23 @@
 
 //------------------------------------------------------------------------------
 
-#ifndef __dll_hidden
-#if defined(__GNUC__) || __has_attribute(visibility)
-#define __hidden __attribute__((visibility("hidden")))
+#ifndef __hidden
+#if defined(__GNUC__) || __has_attribute(__visibility__)
+#define __hidden __attribute__((__visibility__("hidden")))
 #else
 #define __hidden
 #endif
-#endif /* __dll_hidden */
+#endif /* __hidden */
 
 #ifndef __dll_export
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#if defined(__GNUC__) || __has_attribute(dllexport)
-#define __dll_export __attribute__((dllexport))
+#if defined(__GNUC__) || __has_attribute(__dllexport__)
+#define __dll_export __attribute__((__dllexport__))
 #else
 #define __dll_export __declspec(dllexport)
 #endif
-#elif defined(__GNUC__) || __has_attribute(visibility)
-#define __dll_export __attribute__((visibility("default")))
+#elif defined(__GNUC__) || __has_attribute(__visibility__)
+#define __dll_export __attribute__((__visibility__("default")))
 #else
 #define __dll_export
 #endif
@@ -429,21 +443,21 @@
 
 #ifndef __dll_import
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#if defined(__GNUC__) || __has_attribute(dllimport)
-#define __dll_import __attribute__((dllimport))
+#if defined(__GNUC__) || __has_attribute(__dllimport__)
+#define __dll_import __attribute__((__dllimport__))
 #else
 #define __dll_import __declspec(dllimport)
 #endif
-#elif defined(__GNUC__) || __has_attribute(visibility)
-#define __dll_import __attribute__((visibility("default")))
+#elif defined(__GNUC__) || __has_attribute(__visibility__)
+#define __dll_import __attribute__((__visibility__("default")))
 #else
 #define __dll_import
 #endif
 #endif /* __dll_import */
 
 #ifndef __dll_visibility_default
-#if defined(__GNUC__) || __has_attribute(visibility)
-#define __dll_visibility_default __attribute__((visibility("default")))
+#if defined(__GNUC__) || __has_attribute(__visibility__)
+#define __dll_visibility_default __attribute__((__visibility__("default")))
 #else
 #define __dll_visibility_default
 #endif
@@ -474,8 +488,8 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #ifdef _MSC_VER
 #define ERTHINK_PACKED_STRUCT(name)                                            \
   __pragma(pack(push, 1)) struct name __pragma(pack(pop))
-#elif defined(__GNUC__) || __has_attribute(packed)
-#define ERTHINK_PACKED_STRUCT(name) struct __attribute__((packed)) name
+#elif defined(__GNUC__) || __has_attribute(__packed__)
+#define ERTHINK_PACKED_STRUCT(name) struct __attribute__((__packed__)) name
 #else
 #error Unsupported C/C++ compiler
 #endif /* FPT_PACKED_STRUCT */
@@ -506,20 +520,9 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #endif
 #endif /* unlikely */
 
-/* Workaround for Coverity Scan */
-#if defined(__COVERITY__) && __GNUC_PREREQ(7, 0) && !defined(__cplusplus)
-typedef float _Float32;
-typedef double _Float32x;
-typedef double _Float64;
-typedef long double _Float64x;
-typedef float _Float128 __attribute__((__mode__(__TF__)));
-typedef __complex__ float __cfloat128 __attribute__((__mode__(__TC__)));
-typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
-#endif /* Workaround for Coverity Scan */
-
 #if !defined(alignas) && (!defined(__cplusplus) || __cplusplus < 201103L)
-#if defined(__GNUC__) || defined(__clang__) || __has_attribute(aligned)
-#define alignas(N) __attribute__((aligned(N)))
+#if defined(__GNUC__) || defined(__clang__) || __has_attribute(__aligned__)
+#define alignas(N) __attribute__((__aligned__(N)))
 #elif defined(_MSC_VER)
 #define alignas(N) __declspec(align(N))
 #else
@@ -556,7 +559,8 @@ typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
 
 //------------------------------------------------------------------------------
 
-#if defined(__cplusplus) && !defined(DEFINE_ENUM_FLAG_OPERATORS)
+#ifndef DEFINE_ENUM_FLAG_OPERATORS
+#if defined(__cplusplus)
 // Define operator overloads to enable bit operations on enum values that are
 // used to define flags (based on Microsoft's DEFINE_ENUM_FLAG_OPERATORS).
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUM)                                       \
@@ -584,3 +588,4 @@ typedef _Complex float __cfloat128 __attribute__((__mode__(__TC__)));
 #else                                    /* __cplusplus */
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUM) /* nope, C allows these operators */
 #endif                                   /* !__cplusplus */
+#endif                                   /* DEFINE_ENUM_FLAG_OPERATORS */

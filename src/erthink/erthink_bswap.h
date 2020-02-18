@@ -1,6 +1,6 @@
 ﻿/*
- *  Copyright (c) 1994-2019 Leonid Yuriev <leo@yuriev.ru>.
- *  https://github.com/leo-yuriev/erthink
+ *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,6 +21,16 @@
 #include "erthink_byteorder.h"
 #include "erthink_defs.h"
 #include "erthink_intrin.h"
+
+#pragma push_macro("bswap16")
+#pragma push_macro("bswap32")
+#pragma push_macro("bswap64")
+
+#undef bswap16
+#undef bswap32
+#undef bswap64
+
+//------------------------------------------------------------------------------
 
 #ifdef __cplusplus
 namespace erthink {
@@ -121,3 +131,7 @@ template <> inline constexpr_intrin int64_t bswap<int64_t>(int64_t v) {
 }
 }
 #endif
+
+#pragma pop_macro("bswap16")
+#pragma pop_macro("bswap32")
+#pragma pop_macro("bswap64")
