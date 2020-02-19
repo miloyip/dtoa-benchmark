@@ -300,7 +300,7 @@ body { padding-top: 70px; }
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="https://github.com/leo-yuriev/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
+      <a class="navbar-brand" href="https://github.com/erthink/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -317,7 +317,7 @@ body { padding-top: 70px; }
           </ul>
         </li>
       </ul>
-      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a> and <a href="https://github.com/leo-yuriev" class="navbar-link">Leonid Yuriev</a></p>
+      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a> and <a href="https://github.com/erthink" class="navbar-link">Leonid Yuriev</a></p>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>

@@ -7,11 +7,11 @@ Copyright(c) 2014 Milo Yip <miloyip@gmail.com>
 
 ## Preamble
 
-This fork of the benchmark was created to demonstrate the performance superiority of my `dtoa()` implementation over others.
+This fork of the benchmark was created to demonstrate the performance superiority of my new `dtoa()` implementation over others.
 
 [Ryū algorithm](https://github.com/ulfjack/ryu) by Ulf Adams known to fastest in much cases, especially for short string representations. However, I would like to draw attention to my own speed-competing but more compact Grisu2-based implementation.
 
-Briefly, about my double-to-string implementation:
+Briefly, about this double-to-string implementation:
 
 1. it is a Grisu-based, but not exactly the Grisu2;
 
@@ -57,43 +57,44 @@ Then, **RandomDigit** case for benchmark is carried out:
 
 ## Results
 
-The following are results measured by `RandomDigit` testcase on a PC (Core i7-4600U @2.10Ghz),
-where `dtoa()` is compiled by GNU C++ 8.3 for x86-64 Linux.
+The following are results measured by `RandomDigit` testcase on a PC (Core i7-7820HQ CPU @ 2.90GHz),
+where `dtoa()` is compiled by GNU C++ 9.2.1 for x86-64 Linux.
 The speedup is based on `sprintf`'s _Sum_ values.
 
 Function      |  Min ns |  RMS ns  |  Max ns |   Sum ns  | Speedup |
 :-------------|--------:|---------:|--------:|----------:|--------:|
-erthink       |    25.9 |   46.083 |    62.8 |     764.1 | ×20.1   |
-ryu           |    47.1 |   59.860 |    70.1 |    1010.0 | ×15.2   |
-milo          |    42.7 |   64.336 |    78.1 |    1083.0 | ×14.2   |
-emyg          |    42.2 |   64.330 |    77.8 |    1083.0 | ×14.2   |
-floaxie       |    27.4 |   73.213 |    98.2 |    1181.0 | ×13.0   |
-grisu2        |    73.4 |   90.677 |   109.3 |    1532.0 | ×10.0   |
-doubleconv    |    78.7 |  120.223 |   150.7 |    2021.0 | ×7.6    |
-fmt           |    97.3 |  126.511 |   151.5 |    2137.6 | ×7.2    |
-fpconv        |   107.1 |  154.852 |   178.6 |    2611.5 | ×5.9    |
-sprintf       |   826.0 |  904.252 |   968.1 |   15353.2 | ×1.0    |
-ostrstream    |  1210.0 | 1289.817 |  1357.3 |   21912.5 | ×0.7    |
-ostringstream |  1284.7 | 1374.006 |  1452.8 |   23338.3 | ×0.7    |
+null          |     1.2 |    1.200 |     1.2 |      20.4 |   N/A   |
+erthink       |    21.4 |   33.381 |    43.9 |     558.1 | ×23.5   |
+ryu           |    35.3 |   50.011 |    65.7 |     835.4 | ×15.7   |
+emyg          |    38.1 |   58.310 |    69.7 |     983.2 | ×13.3   |
+milo          |    37.8 |   59.819 |    71.8 |    1007.7 | ×13.0   |
+floaxie       |    24.5 |   68.028 |    92.4 |    1089.8 | ×12.0   |
+fmt           |    75.3 |  101.532 |   130.8 |    1712.2 | ×7.7    |
+doubleconv    |    69.7 |  103.070 |   134.0 |    1731.4 | ×7.6    |
+grisu2        |   101.6 |  119.538 |   137.8 |    2024.3 | ×6.5    |
+fpconv        |   102.6 |  145.437 |   167.5 |    2454.2 | ×5.3    |
+stb           |   188.8 |  191.082 |   198.6 |    3248.1 | ×4.0    |
+sprintf       |   700.1 |  772.833 |   827.7 |   13119.8 | ×1.0    |
+ostrstream    |  1058.4 | 1133.081 |  1187.4 |   19250.5 | ×0.7    |
+ostringstream |  1110.9 | 1196.817 |  1267.8 |   20327.0 | ×0.6    |
 
-![randomdigit_i7-4600U@2.10_linux-x86_64-gcc8.3.png](result/randomdigit_i7-4600U@2.10_linux-x86_64-gcc8.3.png)
-
-* [i7-4600U@2.10, linux-x86_64, GNU C/C++ 8.3](https://leo-yuriev.github.io/dtoa-benchmark/result/randomdigit_i7-4600U@2.10_linux-x86_64-gcc8.3.html)
-* [i7-7820@2.90, linux-x86_64, GNU C/C++ 9.1](https://leo-yuriev.github.io/dtoa-benchmark/result/randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1.html)
+![randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1.png](result/randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1.png)
 
 ## Implementations
 
 Function      | Description
 --------------|-----------
-sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
-[gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation.
+[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2 C++ header-only implementation.
+[ryu](https://github.com/ulfjack/ryu) | Ulf Adams's [Ryū algorithm](https://dl.acm.org/citation.cfm?id=3192369).
+[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ header-only implementation.
+emyg | C version of Milo Yip's Grisu2 implementation by Doug Currie.
+[floaxie](https://github.com/aclex/floaxie) | Alexey Chernov's Grisu2 implementation.
 [grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0) | Florian Loitsch's Grisu2 C implementation [1].
 [doubleconv](https://code.google.com/p/double-conversion/) |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
+[fmt](https://github.com/fmtlib/fmt) | `{fmt}` is an open-source formatting library for C++
 [fpconv](https://github.com/night-shift/fpconv) | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
-[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ header-only implementation.
-[erthink](https://github.com/leo-yuriev/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2 C++ header-only implementation.
-[ryu](https://github.com/ulfjack/ryu) | Ulf Adams's [Ryū algorithm](https://dl.acm.org/citation.cfm?id=3192369).
-null          | Do nothing. It measures the overheads of looping and function call
+sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
+[gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation. Disabled because of SIGSEGV.
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
 ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)`.
 
@@ -122,7 +123,3 @@ ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)
 ## Related Benchmarks and Discussions
 
 * [Printing Floating-Point Numbers](http://www.ryanjuckett.com/programming/printing-floating-point-numbers/)
-
---------------------------------------------------------------------------------
-
-#### This is the mirror of origin repository that was moved to [abf.io](https://abf.io/erthink/) because of discriminatory restrictions for the Russian Crimea.
