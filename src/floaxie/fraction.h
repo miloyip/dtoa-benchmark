@@ -34,16 +34,16 @@ namespace floaxie {
  * 0.625 = 0.101
  * ~~~
  *
- * \tparam T numeric type of input value and result
+ * \tparam T numeric type of input value and result.
  * \tparam decimal_digits number of significant decimal digits in
  * numerator (equals to the power of ten in denominator); for example, for
- * 0.625 \p **decimal_digits** is 3
+ * 0.625 \p **decimal_digits** is 3.
  * \tparam binary_digits number of significant binary digits in numerator
  * of the result, which is defined by the necessary accuracy of
- * result approximation; for example, for 0.101 \p **decimal_digits** is 3
+ * result approximation; for example, for 0.101 \p **decimal_digits** is 3.
  * \tparam current_binary_digit template cursor used to implement
- * recursive descent
- * \tparam terminal automatically calculated flag of recursion termination
+ * recursive descent.
+ * \tparam terminal automatically calculated flag of recursion termination.
  */
 template <typename T, std::size_t decimal_digits, std::size_t binary_digits,
           std::size_t current_binary_digit,
@@ -60,9 +60,9 @@ struct fraction_converter<T, decimal_digits, binary_digits,
   /** \brief Calculates \p `current_binary_digit`-th digit of the result.
    *
    * \param decimal_numerator value of decimal numerator of common
-   * fraction to convert
+   * fraction to convert.
    *
-   * \return Properly shifted value of \p `current_binary_digit`-th
+   * \return properly shifted value of \p `current_binary_digit`-th
    * digit of the result.
    */
   static T convert(T decimal_numerator) {
@@ -91,9 +91,9 @@ struct fraction_converter<T, decimal_digits, binary_digits,
   /** \brief Calculates least significant digit of the result.
    *
    * \param decimal_numerator value of decimal numerator of common
-   * fraction to convert
+   * fraction to convert.
    *
-   * \return Right most (least significant) digit of the result.
+   * \return right most (least significant) digit of the result.
    */
   static T convert(T decimal_numerator) {
     constexpr T numerator(static_pow<10, decimal_digits>());
@@ -109,11 +109,11 @@ struct fraction_converter<T, decimal_digits, binary_digits,
  * specified accuracy.
  *
  * \tparam decimal_digits number of digits in decimal numerator to observe
- * (input accuracy)
+ * (input accuracy).
  * \tparam binary_digits number of digits in binary numerator to generate
- * (output accuracy)
+ * (output accuracy).
  *
- * \return Value of binary numerator with the specified accuracy as
+ * \return value of binary numerator with the specified accuracy as
  * calculated by `fraction_converter`.
  */
 template <std::size_t decimal_digits, std::size_t binary_digits, typename T>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015, 2016, 2017 Alexey Chernov <4ernov@gmail.com>
+ * Copyright 2015-2019 Alexey Chernov <4ernov@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ template <typename FloatType> struct value_and_status {
   /** \brief Conversion status indicating any problems occurred. */
   conversion_status status;
 
-  /** \brief Constructs the object with empty value and successful status */
+  /** \brief Constructs the object with empty value and successful status. */
   value_and_status() noexcept : value(), status(conversion_status::success) {}
   /** \brief Default conversion operator to `FloatType` to make use of the
    * wrapper more transparent. */
@@ -63,7 +63,7 @@ template <typename FloatType> struct value_and_status {
  *   - optional 'e' of 'E' character followed by optional sign ('+' or '-')
  *     and sequence of one or more decimal digits.
  *
- * Function doesn't expects any preceding spacing characters and treats the
+ * Function doesn't expect any preceding spacing characters and treats the
  * representation as incorrect, if there's any.
  *
  * \tparam FloatType target floating point type to store results.
@@ -76,11 +76,18 @@ template <typename FloatType> struct value_and_status {
  * \param str buffer containing the string representation of the value.
  * \param str_end out parameter, which will contain a pointer to first
  * character after the parsed value in the specified buffer. If str_end is
- * NULL, it is ignored.
- * \param fallback_func pointer to fallback function.
+ * null, it is ignored.
+ * \param fallback_func pointer to fallback function. If omitted, by default
+ * is `strtof()` for `float`'s, `strtod()` for `double`'s, `strtold()` for
+ * `long double`'s. Null value will lead to undefined behaviour in case of
+ * algorithm is unsure and fall back to using it.
  *
- * \return parsed value, if the input is correct, default constructed value
- * otherwise.
+ * \return structure containing the parsed value, if the
+ * input is correct (default constructed value otherwise) and status of the
+ * conversion made.
+ *
+ * \sa `value_and_status`
+ * \sa `conversion_status`
  */
 template <typename FloatType, typename CharType,
           typename FallbackCallable = FloatType(const CharType *, CharType **)>
@@ -124,9 +131,7 @@ atof(const CharType *str, std::nullptr_t str_end,
 /** \brief Parses floating point represented in `std::basic_string`.
  *
  * `atof()` adapter, which may be more useful for cases, where
- * `std::basic_string` strings are widely used. Please note, that it
- * might be slightly slower, than pure `atof()` due to additional
- * operations performed.
+ * `std::basic_string` strings are widely used.
  *
  * \tparam FloatType target floating point type to store results.
  * \tparam CharType character type (typically `char` or `wchar_t`) the input
@@ -136,10 +141,17 @@ atof(const CharType *str, std::nullptr_t str_end,
  * for `float`'s, `strtod()` for `double`'s, `strtold()` for `long double`'s).
  *
  * \param str string representation of the value.
- * \param fallback_func pointer to fallback function.
+ * \param fallback_func pointer to fallback function. If omitted, by default
+ * is `strtof()` for `float`'s, `strtod()` for `double`'s, `strtold()` for
+ * `long double`'s. Null value will lead to undefined behaviour in case of
+ * algorithm is unsure and fall back to using it.
  *
- * \return parsed value, if the input is correct, default constructed value
- * otherwise.
+ * \return structure containing the parsed value, if the
+ * input is correct (default constructed value otherwise) and status of the
+ * conversion made.
+ *
+ * \sa `value_and_status`
+ * \sa `conversion_status`
  */
 template <typename FloatType, typename CharType,
           typename FallbackCallable = FloatType(const CharType *, CharType **)>

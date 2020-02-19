@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Alexey Chernov <4ernov@gmail.com>
+ * Copyright 2015-2019 Alexey Chernov <4ernov@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@ constexpr auto
  * k_comp() function from reference paper where this component
  * is considered.
  *
- * \tparam alpha α value of **Grisu** algorithm
- * \tparam gamma γ value of **Grisu** algorithm
+ * \tparam alpha α value of **Grisu** algorithm.
+ * \tparam gamma γ value of **Grisu** algorithm.
  *
- * \param e binary exponent of the floating point value
+ * \param e binary exponent of the floating point value.
  *
  * \see [Printing Floating-Point Numbers Quickly and Accurately with
  * Integers]

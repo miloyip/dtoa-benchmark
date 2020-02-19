@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Alexey Chernov <4ernov@gmail.com>
+ * Copyright 2015-2019 Alexey Chernov <4ernov@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ namespace floaxie {
  *
  * Unspecialized template contains intermediate steps implementation.
  *
- * \tparam base base of the power
- * \tparam pow exponent to power base
+ * \tparam base base of the power.
+ * \tparam pow exponent to power base.
  */
 template <unsigned int base, unsigned int pow> struct static_pow_helper {
   /** \brief Result of power calculation (in compile time).
@@ -48,8 +48,8 @@ template <unsigned int base> struct static_pow_helper<base, 0> {
 /** \brief Handy wrapper function to calculate positive power in compile
  * time.
  *
- * \tparam base base of the power
- * \tparam pow exponent to power base
+ * \tparam base base of the power.
+ * \tparam pow exponent to power base.
  *
  * \return Result of power calculation (in compile time).
  */
@@ -62,10 +62,10 @@ constexpr unsigned long static_pow() {
 /** \brief Helper structure template to append value to
  * `std::integer_sequence`.
  *
- * \tparam T type of elements of `std::integer_sequence`
- * \tparam Add element to add to the specified sequence
+ * \tparam T type of elements of `std::integer_sequence`.
+ * \tparam Add element to add to the specified sequence.
  * \tparam Seq original `std::integer_sequence` expressed by parameter pack
- * of its elements in template parameters
+ * of its elements in template parameters.
  */
 template <typename T, T Add, typename Seq> struct concat_sequence;
 
@@ -86,15 +86,15 @@ struct concat_sequence<T, Add, std::integer_sequence<T, Seq...>> {
 /** \brief Helper structure template to convert `std::integer_sequence`
  * to `std::array`.
  *
- * \tparam Seq sequence to convert
+ * \tparam Seq sequence to convert.
  */
 template <typename Seq> struct make_integer_array;
 
 /** \brief Main specialization of `make_integer_array` with the specified
  * input `std::integer_sequence`.
  *
- * \tparam T type of elements of `std::integer_sequence`
- * \tparam Ints elements of the `std::integer_sequence` to convert
+ * \tparam T type of elements of `std::integer_sequence`.
+ * \tparam Ints elements of the `std::integer_sequence` to convert.
  */
 template <typename T, T... Ints>
 struct make_integer_array<std::integer_sequence<T, Ints...>> {
@@ -114,9 +114,9 @@ struct make_integer_array<std::integer_sequence<T, Ints...>> {
  * For example, if \p base is `10` and \p current_pow is `3`, the result
  * will contain values `1000`, `100`, `10`, `1`.
  *
- * \tparam T type of elements
- * \tparam base base of powers to calculate
- * \tparam current_pow the maximum exponent value to calculate power for
+ * \tparam T type of elements.
+ * \tparam base base of powers to calculate.
+ * \tparam current_pow the maximum exponent value to calculate power for.
  */
 template <typename T, T base, std::size_t current_pow> struct pow_sequencer {
   /** \brief Value of power on the current step (in recursion). */
@@ -141,10 +141,10 @@ template <typename T, T base> struct pow_sequencer<T, base, 0> {
 
 /** \brief Handy wrapper function to calculate a sequence of powers.
  *
- * \tparam T type of elements
- * \tparam base base for powers to calculate
+ * \tparam T type of elements.
+ * \tparam base base for powers to calculate.
  * \tparam max_pow maximum exponent, up to which the calculation will be
- * performed
+ * performed.
  *
  * \return `std::array` filled with powers of the specified arguments in
  * reverse order. I.e. for \p **T** of `unsigned int`, \p **base** of 10

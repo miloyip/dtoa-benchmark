@@ -20,15 +20,15 @@
 #include <cstdlib>
 #include <cwchar>
 
-#include "conversion_status.h"
+#include <floaxie/conversion_status.h>
 
 namespace floaxie {
 /** \brief Function template to wrap C Standard Library floating point
  * parse function based on floating-point type and character type (normal
  * or wide).
  *
- * \tparam FloatType floating point type to parse
- * \tparam CharType character type of string to parse
+ * \tparam FloatType floating point type to parse.
+ * \tparam CharType character type of string to parse.
  */
 template <typename FloatType, typename CharType>
 FloatType default_fallback(const CharType *str, CharType **str_end);
@@ -73,6 +73,19 @@ inline long double default_fallback<long double, wchar_t>(const wchar_t *str,
   return std::wcstold(str, str_end);
 }
 
+/** \brief Returns `conversion_status` based on `errno` value.
+ *
+ * Analyzes current value of `errno` together with the passed conversion
+ * result and returns `conversion_status` value for the case.
+ *
+ * \tparam FloatType floating-point type of the returned value passed.
+ *
+ * \p returned_value the value returned after the conversion.
+ *
+ * \return status of the last conversion.
+ *
+ * \sa `conversion_status`
+ */
 template <typename FloatType>
 conversion_status check_errno(FloatType returned_value) {
   if (errno != ERANGE)

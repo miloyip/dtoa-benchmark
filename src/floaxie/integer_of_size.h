@@ -23,7 +23,7 @@
 namespace floaxie {
 /** \brief Identity type — hold the specified type in internal `typedef`.
  *
- * \tparam T type to hold
+ * \tparam T type to hold.
  */
 template <typename T> struct identity {
   /** \brief Held type. */
@@ -35,7 +35,7 @@ template <typename T> struct identity {
  * Useful for choosing unsigned integer type of the same width as some
  * target type (e.g. floating point) to increase possible accuracy.
  *
- * \tparam size size in bytes of the desired type
+ * \tparam size size in bytes of the desired type.
  */
 template <std::size_t size>
 struct integer_of_size : identity<std::uintmax_t()> {};

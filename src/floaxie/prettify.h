@@ -1,5 +1,5 @@
 /*
- * Copyright 2015, 2016 Alexey Chernov <4ernov@gmail.com>
+ * Copyright 2015-2019 Alexey Chernov <4ernov@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,9 @@ namespace floaxie {
  *
  */
 enum format {
-  /** \brief Decimal format */
+  /** \brief Decimal format. */
   decimal,
-  /** \brief Decimal exponent (a.k.a. *scientific*) format */
+  /** \brief Decimal exponent (a.k.a. *scientific*) format. */
   scientific
 };
 
@@ -65,9 +65,10 @@ constexpr const char digits_lut[200] = {
  * \p **threshold** value.
  * \tparam threshold the maximum number of digits in the string
  * representation, when decimal format can be used (otherwise decimal
- * exponent or *scientific* format is used)
+ * exponent or *scientific* format is used).
  *
- * \return `format` value of the chosen format
+ * \return value of the chosen format.
+ * \see `format`
  */
 template <std::size_t threshold>
 inline format choose_format(const std::size_t field_width) noexcept {
@@ -80,10 +81,10 @@ inline format choose_format(const std::size_t field_width) noexcept {
 /** \brief Prints decimal exponent value.
  *
  * \tparam CharType character type (typically `char` or `wchar_t`) of the
- * output buffer \p **buffer**
+ * output buffer \p **buffer**.
  *
- * \param K decimal exponent value
- * \param buffer character buffer to print to
+ * \param K decimal exponent value.
+ * \param buffer character buffer to print to.
  */
 template <typename CharType>
 inline void fill_exponent(unsigned int K, CharType *buffer) noexcept {
@@ -103,12 +104,12 @@ inline void fill_exponent(unsigned int K, CharType *buffer) noexcept {
  * decimal exponent format.
  *
  * \tparam CharType character type (typically `char` or `wchar_t`) of the
- * output buffer \p **buffer**
+ * output buffer \p **buffer**.
  *
- * \param buffer character buffer with properly printed mantissa
+ * \param buffer character buffer with properly printed mantissa.
  * \param len output parameter to return the length of printed
- * representation
- * \param dot_pos number of character, where dot position should be placed
+ * representation.
+ * \param dot_pos number of character, where dot position should be placed.
  *
  * \see `print_decimal()`
  */
@@ -137,11 +138,11 @@ inline void print_scientific(CharType *buffer, const unsigned int len,
  * placing the decimal point into the proper place etc.
  *
  * \tparam CharType character type (typically `char` or `wchar_t`) of the
- * output buffer \p **buffer**
+ * output buffer \p **buffer**.
  *
- * \param buffer character buffer with printed digits
- * \param len length of current representation in \p **buffer**
- * \param k decimal exponent of the value
+ * \param buffer character buffer with printed digits.
+ * \param len length of current representation in \p **buffer**.
+ * \param k decimal exponent of the value.
  */
 template <typename CharType>
 inline void print_decimal(CharType *buffer, const unsigned int len,
@@ -176,13 +177,13 @@ inline void print_decimal(CharType *buffer, const unsigned int len,
  *
  * \tparam decimal_scientific_threshold the maximum number of digits in the
  * string representation, when decimal format can be used (otherwise
- * decimal exponent or *scientific* format is used)
+ * decimal exponent or *scientific* format is used).
  * \tparam CharType character type (typically `char` or `wchar_t`) of the
- * output buffer \p **buffer**
+ * output buffer \p **buffer**.
  *
- * \param buffer character buffer with printed digits
- * \param len length of current representation in \p **buffer**
- * \param k decimal exponent of the value
+ * \param buffer character buffer with printed digits.
+ * \param len length of current representation in \p **buffer**.
+ * \param k decimal exponent of the value.
  *
  * \see `print_decimal()`
  * \see `print_scientific()`
