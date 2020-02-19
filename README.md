@@ -1,7 +1,27 @@
+<!-- Required extensions: pymdownx.betterem, pymdownx.tilde, pymdownx.emoji, pymdownx.tasklist, pymdownx.superfences -->
+
 # dtoa Benchmark
 
 Copyright(c) 2019-2020 Leonid Yuriev <leo@yuriev.ru>,
 Copyright(c) 2014 Milo Yip <miloyip@gmail.com>
+
+## Preamble
+
+This fork of the benchmark was created to demonstrate the performance superiority of my `dtoa()` implementation over others.
+
+[Ryū algorithm](https://github.com/ulfjack/ryu) by Ulf Adams known to fastest in much cases, especially for short string representations. However, I would like to draw attention to my own speed-competing but more compact Grisu2-based implementation.
+
+Briefly, about my double-to-string implementation:
+
+1. it is a Grisu-based, but not exactly the Grisu2;
+
+2. for now produces only a raw ASCII representation, e.g. `-22250738585072014e-324` without dot and `'\0'` at the end;
+
+3. compared to Ryū, it significantly less code size and spends less clock cycles per digit, but is slightly inferior in a whole because generates a longer ASCII representation.
+
+Now I would like to get feedback, assess how much this is in demand and collect suggestions for further improvements. For instance, I think that it is reasonable to implement conversion with a specified precision (i.e., with a specified number of digits), but not provide a printf-like interface.
+
+Any suggestions are welcome!
 
 ## Introduction
 
@@ -105,5 +125,4 @@ ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)
 
 --------------------------------------------------------------------------------
 
-### The [repository now only mirrored on the Github](https://abf.io/erthink/d2a-benchmark) due to illegal discriminatory restrictions for Russian Crimea and for sovereign crimeans.
-<!-- Required extensions: pymdownx.betterem, pymdownx.tilde, pymdownx.emoji, pymdownx.tasklist, pymdownx.superfences -->
+#### This is the mirror of origin repository that was moved to [abf.io](https://abf.io/erthink/) because of discriminatory restrictions for the Russian Crimea.
