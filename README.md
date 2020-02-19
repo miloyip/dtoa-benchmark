@@ -78,7 +78,15 @@ sprintf       |   700.1 |  772.833 |   827.7 |   13119.8 | ×1.0    |
 ostrstream    |  1058.4 | 1133.081 |  1187.4 |   19250.5 | ×0.7    |
 ostringstream |  1110.9 | 1196.817 |  1267.8 |   20327.0 | ×0.6    |
 
-![randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1.png](result/randomdigit_i7-7820@2.90_linux-x86_64-gcc9.1.png)
+#### All implementations
+![all_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_time.png](results/all_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_time.png)
+
+More [clickable charts](https://erthink.github.io/dtoa-benchmark/results/randomdigit.html).
+
+#### Fastest competitors
+![filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_time.png](results/filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_time.png)
+
+![filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_timedigit.png](results/filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_timedigit.png)
 
 ## Implementations
 
