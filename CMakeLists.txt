@@ -34,21 +34,24 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES
   src/stb_test.cpp src/stb/stb_sprintf.h
+
+  src/double-conversion/bignum.cc
   src/double-conversion/bignum-dtoa.cc
   src/double-conversion/bignum-dtoa.h
-  src/double-conversion/bignum.cc
   src/double-conversion/bignum.h
   src/double-conversion/cached-powers.cc
   src/double-conversion/cached-powers.h
-  src/double-conversion/diy-fp.cc
   src/double-conversion/diy-fp.h
-  src/double-conversion/double-conversion.cc
   src/double-conversion/double-conversion.h
+  src/double-conversion/double-to-string.cc
+  src/double-conversion/double-to-string.h
   src/double-conversion/fast-dtoa.cc
   src/double-conversion/fast-dtoa.h
   src/double-conversion/fixed-dtoa.cc
   src/double-conversion/fixed-dtoa.h
   src/double-conversion/ieee.h
+  src/double-conversion/string-to-double.cc
+  src/double-conversion/string-to-double.h
   src/double-conversion/strtod.cc
   src/double-conversion/strtod.h
   src/double-conversion/utils.h
@@ -112,21 +115,40 @@ set(SOURCES
   src/floaxie/type_punning_cast.h
   src/floaxietest.cpp
 
-  src/fmt/chrono.h src/fmt/color.h src/fmt/compile.h src/fmt/core.h
-  src/fmt/format.h src/fmt/format-inl.h src/fmt/locale.h src/fmt/os.h
-  src/fmt/ostream.h src/fmt/posix.h src/fmt/printf.h src/fmt/ranges.h
-  src/fmt/format.cc src/fmt/os.cc
+  src/fmt/chrono.h
+  src/fmt/color.h
+  src/fmt/compile.h
+  src/fmt/core.h
+  src/fmt/format.h
+  src/fmt/format-inl.h
+  src/fmt/locale.h
+  src/fmt/os.h
+  src/fmt/ostream.h
+  src/fmt/posix.h
+  src/fmt/printf.h
+  src/fmt/ranges.h
+  src/fmt/format.cc
+  src/fmt/os.cc
   src/fmttest.cpp
 
-  src/fpconv/fpconv.c src/fpconv/fpconv.h src/fpconv/license src/fpconv/powers.h
+  src/fpconv/fpconv.c
+  src/fpconv/fpconv.h
+  src/fpconv/license
+  src/fpconv/powers.h
   src/fpconvtest.cpp
 
-  src/gay/dtoa.c src/gay/g_fmt.c
+  src/gay/dtoa.c
+  src/gay/g_fmt.c
   src/gaytest.cpp
 
-  src/grisu/diy_fp.h src/grisu/double.h src/grisu/fast_exponent.h
-  src/grisu/grisu2.h src/grisu/grisu2b_59_56.c src/grisu/k_comp.h
-  src/grisu/powers.h src/grisu/powers_ten_round64.h
+  src/grisu/diy_fp.h
+  src/grisu/double.h
+  src/grisu/fast_exponent.h
+  src/grisu/grisu2.h
+  src/grisu/grisu2b_59_56.c
+  src/grisu/k_comp.h
+  src/grisu/powers.h
+  src/grisu/powers_ten_round64.h
   src/grisu/prettify.h
   src/grisu2btest.cpp
 
