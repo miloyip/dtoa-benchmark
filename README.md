@@ -52,8 +52,8 @@ Then, **RandomDigit** case for benchmark is carried out:
 1. Obtain [cmake](https://cmake.org/download/)
 2. Configure build system by running `cmake .` and build benchmark by running `cmake --build .`
 3. On success, run the `dtoa-benchmark` executable is generated at `dtoa-benchmark/` or corresponding subdirectory (e.g `Release` on Windows).
-4. The results in CSV format will be written to `dtoa-benchmark/result`.
-5. Run GNU `make` in `dtoa-benchmark/result` to generate results in HTML.
+4. The results in CSV format will be written to `dtoa-benchmark/results`.
+5. Run GNU `make` in `dtoa-benchmark/results` to generate results in HTML.
 
 ## Results
 
@@ -92,9 +92,9 @@ More [clickable charts](https://erthink.github.io/dtoa-benchmark/results/randomd
 
 Function      | Description
 --------------|-----------
-[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2 C++ header-only implementation.
+[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2-based C++ header-only implementation.
 [ryu](https://github.com/ulfjack/ryu) | Ulf Adams's [Ryū algorithm](https://dl.acm.org/citation.cfm?id=3192369).
-[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ header-only implementation.
+[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ header-only implementation for RapidJSON.
 emyg | C version of Milo Yip's Grisu2 implementation by Doug Currie.
 [floaxie](https://github.com/aclex/floaxie) | Alexey Chernov's Grisu2 implementation.
 [grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0) | Florian Loitsch's Grisu2 C implementation [1].
@@ -102,7 +102,7 @@ emyg | C version of Milo Yip's Grisu2 implementation by Doug Currie.
 [fmt](https://github.com/fmtlib/fmt) | `{fmt}` is an open-source formatting library for C++
 [fpconv](https://github.com/night-shift/fpconv) | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
 sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
-[gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation. Disabled because of SIGSEGV.
+[gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation (Disabled because of invalid results and/or SIGSEGV).
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
 ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)`.
 
