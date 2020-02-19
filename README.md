@@ -88,23 +88,24 @@ More [clickable charts](https://erthink.github.io/dtoa-benchmark/results/randomd
 
 ![filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_timedigit.png](results/filtered_randomdigit_i7-7820@2.90_linux-x86_64-gcc9.2_randomdigit_timedigit.png)
 
-## Implementations
+## Implementations in descending order of speed
 
 Function      | Description
 --------------|-----------
-[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2-based C++ header-only implementation.
+[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2-based C++ implementation.
 [ryu](https://github.com/ulfjack/ryu) | Ulf Adams's [Ryū algorithm](https://dl.acm.org/citation.cfm?id=3192369).
-[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ header-only implementation for RapidJSON.
-emyg | C version of Milo Yip's Grisu2 implementation by Doug Currie.
-[floaxie](https://github.com/aclex/floaxie) | Alexey Chernov's Grisu2 implementation.
-[grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0) | Florian Loitsch's Grisu2 C implementation [1].
+[emyg](https://github.com/miloyip/dtoa-benchmark/blob/master/src/emyg/emyg_dtoa.c) | C version of Milo Yip's Grisu2 implementation by Doug Currie.
+[milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ implementation for RapidJSON.
+[floaxie](https://github.com/aclex/floaxie) | Alexey Chernov's Grisu2 implementation for .
+[fmt](https://github.com/fmtlib/fmt) | Victor Zverovich's Grisu2 implementation for `{fmt}` C++ library.
 [doubleconv](https://code.google.com/p/double-conversion/) |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
-[fmt](https://github.com/fmtlib/fmt) | `{fmt}` is an open-source formatting library for C++
-[fpconv](https://github.com/night-shift/fpconv) | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
+[grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0) | Florian Loitsch's Grisu2 C implementation [1].
+[fpconv](https://github.com/night-shift/fpconv) | Andreas Samoljuk's Grisu2 C implementation.
+[stb](https://github.com/nothings/stb)         | Jeff Roberts's & Sean Barrett's snprintf() implementation.
 sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
-[gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation (Disabled because of invalid results and/or SIGSEGV).
-ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
-ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)`.
+ostringstream | traditional `std::ostringstream` in C++ standard library with `setprecision(17)`.
+ostrstream    | traditional `std::ostrstream` in C++ standard library with `setprecision(17)`.
+~~[gay](http://www.netlib.org/fp/)~~ | David M. Gay's `dtoa()` C implementation. **Disabled** because of invalid results and/or SIGSEGV.
 
 ## FAQ
 
