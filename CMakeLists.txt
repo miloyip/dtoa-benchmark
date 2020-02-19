@@ -113,7 +113,10 @@ set(SOURCES
   src/floaxie/type_punning_cast.h
   src/floaxietest.cpp
 
-  src/fmt/core.h src/fmt/format.h src/fmt/format-inl.h
+  src/fmt/chrono.h src/fmt/color.h src/fmt/compile.h src/fmt/core.h
+  src/fmt/format.h src/fmt/format-inl.h src/fmt/locale.h src/fmt/os.h
+  src/fmt/ostream.h src/fmt/posix.h src/fmt/printf.h src/fmt/ranges.h
+  src/fmt/format.cc src/fmt/os.cc
   src/fmttest.cpp
 
   src/fpconv/fpconv.c src/fpconv/fpconv.h src/fpconv/license src/fpconv/powers.h
