@@ -204,8 +204,8 @@ typedef unsigned Long ULong;
   }
 #endif
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef USE_LOCALE
 #include "locale.h"
@@ -255,7 +255,7 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 #define NO_STRTOD_BIGCOMP
 #endif
 
-#include "errno.h"
+#include <errno.h>
 
 #ifdef Bad_float_h
 
@@ -287,12 +287,14 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 #endif
 
 #else /* ifndef Bad_float_h */
-#include "float.h"
+#include <float.h>
 #endif /* Bad_float_h */
 
 #ifndef __MATH_H__
-#include "math.h"
+#include <math.h>
 #endif
+
+#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -4010,9 +4012,10 @@ fast_failed:
 }
 
 /* Do we have a "small" integer? */
-
+assert(k >= 0);
 if (be >= 0 && k <= Int_max) {
   /* Yes. */
+  assert(k < sizeof(tens) / sizeof(tens[0]));
   ds = tens[k];
   if (ndigits < 0 && ilim <= 0) {
     S = mhi = 0;
