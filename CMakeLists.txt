@@ -33,8 +33,7 @@ message(STATUS "Use C++${CXX_STANDARD}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES
-  #stb_sprintf.cpp
-  #stb_sprintf/stb_sprintf.h
+  src/stb_test.cpp src/stb/stb_sprintf.h
   src/double-conversion/bignum-dtoa.cc
   src/double-conversion/bignum-dtoa.h
   src/double-conversion/bignum.cc
