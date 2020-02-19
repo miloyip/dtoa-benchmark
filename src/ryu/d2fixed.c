@@ -24,7 +24,7 @@
 // -DRYU_AVOID_UINT128 Avoid using uint128_t. Slower, depending on your
 // compiler.
 
-#include "src/ryu/ryu2.h"
+#include "src/ryu/ryu.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -35,14 +35,6 @@
 #ifdef RYU_DEBUG
 #include <inttypes.h>
 #include <stdio.h>
-#endif
-
-#if !defined(RYU_ONLY_64_BIT_OPS) && !defined(RYU_AVOID_UINT128) &&            \
-    defined(__SIZEOF_INT128__)
-#define HAS_UINT128
-typedef __uint128_t uint128_t;
-#elif !defined(RYU_ONLY_64_BIT_OPS) && defined(_MSC_VER) && defined(_M_X64)
-#define HAS_64_BIT_INTRINSICS
 #endif
 
 #include "src/ryu/common.h"
@@ -341,19 +333,28 @@ static inline uint32_t lengthForIndex(const uint32_t idx) {
 
 static inline int copy_special_str_printf(char *const result, const bool sign,
                                           const uint64_t mantissa) {
+#if defined(_MSC_VER)
+  // TODO: Check that -nan is expected output on Windows.
   if (sign) {
     result[0] = '-';
   }
   if (mantissa) {
-#if defined(_MSC_VER)
     if (mantissa < (1ull << (DOUBLE_MANTISSA_BITS - 1))) {
       memcpy(result + sign, "nan(snan)", 9);
       return sign + 9;
     }
-#endif
     memcpy(result + sign, "nan", 3);
     return sign + 3;
   }
+#else
+  if (mantissa) {
+    memcpy(result, "nan", 3);
+    return 3;
+  }
+  if (sign) {
+    result[0] = '-';
+  }
+#endif
   memcpy(result + sign, "Infinity", 8);
   return sign + 8;
 }

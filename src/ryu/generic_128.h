@@ -31,7 +31,7 @@ typedef __uint128_t uint128_t;
 
 // There's no way to define 128-bit constants in C, so we use little-endian
 // pairs of 64-bit constants.
-static uint64_t GENERIC_POW5_TABLE[POW5_TABLE_SIZE][2] = {
+static const uint64_t GENERIC_POW5_TABLE[POW5_TABLE_SIZE][2] = {
     {1u, 0u},
     {5u, 0u},
     {25u, 0u},
@@ -89,7 +89,7 @@ static uint64_t GENERIC_POW5_TABLE[POW5_TABLE_SIZE][2] = {
     {7378061867779487305u, 3009265538105056020u},
     {18443565265187884909u, 15046327690525280101u}};
 
-static uint64_t GENERIC_POW5_SPLIT[89][4] = {
+static const uint64_t GENERIC_POW5_SPLIT[89][4] = {
     {0u, 0u, 0u, 72057594037927936u},
     {0u, 5206161169240293376u, 4575641699882439235u, 73468396926392969u},
     {3360510775605221349u, 6983200512169538081u, 4325643253124434363u,
@@ -269,7 +269,7 @@ static uint64_t GENERIC_POW5_SPLIT[89][4] = {
 
 // Unfortunately, the results are sometimes off by one or two. We use an
 // additional lookup table to store those cases and adjust the result.
-static uint64_t POW5_ERRORS[156] = {
+static const uint64_t POW5_ERRORS[156] = {
     0x0000000000000000u, 0x0000000000000000u, 0x0000000000000000u,
     0x9555596400000000u, 0x65a6569525565555u, 0x4415551445449655u,
     0x5105015504144541u, 0x65a69969a6965964u, 0x5054955969959656u,
@@ -323,7 +323,7 @@ static uint64_t POW5_ERRORS[156] = {
     0x0000000051515555u, 0x0010005040000550u, 0x5044044040000000u,
     0x1045040440010500u, 0x0000400000040000u, 0x0000000000000000u};
 
-static uint64_t GENERIC_POW5_INV_SPLIT[89][4] = {
+static const uint64_t GENERIC_POW5_INV_SPLIT[89][4] = {
     {0u, 0u, 0u, 144115188075855872u},
     {1573859546583440065u, 2691002611772552616u, 6763753280790178510u,
      141347765182270746u},
@@ -502,7 +502,7 @@ static uint64_t GENERIC_POW5_INV_SPLIT[89][4] = {
     {7184427196661305643u, 14332510582433188173u, 14230167953789677901u,
      104649889046128358u}};
 
-static uint64_t POW5_INV_ERRORS[154] = {
+static const uint64_t POW5_INV_ERRORS[154] = {
     0x1144155514145504u, 0x0000541555401141u, 0x0000000000000000u,
     0x0154454000000000u, 0x4114105515544440u, 0x0001001111500415u,
     0x4041411410011000u, 0x5550114515155014u, 0x1404100041554551u,
@@ -557,7 +557,7 @@ static uint64_t POW5_INV_ERRORS[154] = {
     0x0000000000000001u,
 };
 
-// Returns e == 0 ? 1 : ceil(log_2(5^e)).
+// Returns e == 0 ? 1 : ceil(log_2(5^e)); requires 0 <= e <= 32768.
 static inline uint32_t pow5bits(const int32_t e) {
   assert(e >= 0);
   assert(e <= 1 << 15);
@@ -662,8 +662,8 @@ static inline void generic_computeInvPow5(const uint32_t i,
   }
 }
 
-static inline int32_t pow5Factor(uint128_t value) {
-  for (int32_t count = 0; value > 0; ++count) {
+static inline uint32_t pow5Factor(uint128_t value) {
+  for (uint32_t count = 0; value > 0; ++count) {
     if (value % 5 != 0) {
       return count;
     }
@@ -680,7 +680,6 @@ static inline bool multipleOfPowerOf5(const uint128_t value, const uint32_t p) {
 
 // Returns true if value is divisible by 2^p.
 static inline bool multipleOfPowerOf2(const uint128_t value, const uint32_t p) {
-  // return __builtin_ctz(value) >= p;
   return (value & ((((uint128_t)1) << p) - 1)) == 0;
 }
 

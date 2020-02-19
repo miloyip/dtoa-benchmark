@@ -77,19 +77,21 @@ set(SOURCES
   src/erthink_test.cpp
 
   src/ryu/common.h
+  src/ryu/d2fixed.c
   src/ryu/d2fixed_full_table.h
+  src/ryu/d2s.c
   src/ryu/d2s_full_table.h
   src/ryu/d2s_intrinsics.h
+  src/ryu/d2s_small_table.h
+  src/ryu/digit_table.h
   src/ryu/f2s.c
+  src/ryu/f2s_full_table.h
+  src/ryu/generic_128.c
   src/ryu/generic_128.h
   src/ryu/ryu_generic_128.h
-  src/ryu/d2fixed.c
-  src/ryu/d2s.c
-  src/ryu/d2s.h
-  src/ryu/digit_table.h
-  src/ryu/generic_128.c
-  src/ryu/ryu2.h
   src/ryu/ryu.h
+  src/ryu/ryu_parse.h
+  src/ryu/s2d.c
   src/ryu_test.cpp
 
   src/floaxie/atof.h
