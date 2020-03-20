@@ -17,6 +17,20 @@
 
 #pragma once
 
+/* Double-to-string conversion based on Grisu algorithm by Florian Loitsch,
+ * https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
+ *
+ * 1. Generated string representation always roundtrip convertible to
+ *    the original value, i.e. by strtod() function.
+ *
+ * 2. Generated string representation is shortest for more than 99.95% of
+ *    IEEE-754 double values, i.e. one extra digit for less than 0.05% values.
+ *
+ * 3. Compared to Ryū algorithm (by Ulf Adams), this implementation
+ *    significantly less in code size and spends less clock cycles per digit,
+ *    but may slightly inferior in a whole on a 16-17 digit values.
+ */
+
 #include "erthink_carryadd.h"
 #include "erthink_clz.h"
 #include "erthink_defs.h"
@@ -44,25 +58,13 @@
 
 namespace erthink {
 
-/* The ERTHINK_D2A_PEDANTRY_ACCURATE macro allows you to control the trade-off
- * between conversion speed and accuracy:
- *
- *  - Define it to non-zero for accurately conversion to impeccable string
- *    representation, which will be a nearest to the actual binary value.
- *
- *  - Otherwise (if ERTHINK_D2A_PEDANTRY_ACCURATE undefiner or defined to zero)
- *    the conversion will be slightly faster and the result will also be correct
- *    (inverse conversion via stdtod() will give the original value).
- *    However, the string representation will be slightly larger than the ideal
- *    nearest value. */
-
-#ifndef ERTHINK_D2A_PEDANTRY_ACCURATE
-#define ERTHINK_D2A_PEDANTRY_ACCURATE 0
-#endif
-
 #ifndef NAMESPACE_ERTHINK_D2A_DETAILS
 #define NAMESPACE_ERTHINK_D2A_DETAILS /* anonymous */
 #endif                                /* NAMESPACE_ERTHINK_D2A_DETAILS */
+
+#ifndef ERTHINK_D2A_AVOID_MUL
+#define ERTHINK_D2A_AVOID_MUL 0
+#endif /* ERTHINK_D2A_AVOID_MUL */
 
 namespace NAMESPACE_ERTHINK_D2A_DETAILS {
 /* low-level routines and bindings to compilers-depended intrinsics */
@@ -107,9 +109,6 @@ static inline /* LY: 'inline' here is better for performance than 'constexpr' */
 //------------------------------------------------------------------------------
 
 namespace grisu {
-
-/* Based on Grisu2 algorithm by Florian Loitsch.
- * https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf */
 
 static constexpr uint64_t IEEE754_DOUBLE_EXPONENT_MASK =
     UINT64_C(0x7FF0000000000000);
@@ -268,34 +267,34 @@ static diy_fp cached_power(const int in_exp2, int &out_exp10) {
   return diy_fp(power10_mas[index], power10_exp2[index]);
 }
 
-#if ERTHINK_D2A_PEDANTRY_ACCURATE
-static __always_inline void round(char *end, uint64_t delta, uint64_t rest,
-                                  uint64_t ten_kappa, uint64_t upper) {
-  while (rest < upper && delta - rest >= ten_kappa &&
-         (rest + ten_kappa < upper || /* closer */
-          upper - rest > rest + ten_kappa - upper)) {
-    assert(end[-1] > '0');
+static __always_inline void round(char *&end, uint64_t delta, uint64_t rest,
+                                  uint64_t ten_kappa, uint64_t upper,
+                                  int &inout_exp10) {
+  while (delta >= ten_kappa + rest &&
+         (rest + ten_kappa < upper ||
+          (rest < upper &&
+           /* closer */ upper - rest >= rest + ten_kappa - upper))) {
+    if (unlikely(end[-1] < '2')) {
+      inout_exp10 += 1;
+      end -= 1;
+      return;
+    }
     end[-1] -= 1;
     rest += ten_kappa;
   }
 }
-#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
 
-static inline char *make_digits(const diy_fp &value, uint64_t delta,
-                                char *const buffer, int &inout_exp10,
-                                const diy_fp &baseline) {
-  const unsigned shift = unsigned(-value.e);
-  const uint64_t mask = UINT64_MAX >> (64 - shift);
+static inline char *make_digits(const bool accurate, const uint64_t top,
+                                uint64_t delta, char *const buffer,
+                                int &inout_exp10, const uint64_t value,
+                                unsigned shift) {
+  uint64_t mask = UINT64_MAX >> (64 - shift);
   char *ptr = buffer;
-#if ERTHINK_D2A_PEDANTRY_ACCURATE
-  const diy_fp gap = value - baseline;
-#else
-  (void)baseline;
-#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
+  const uint64_t gap = top - value;
 
-  assert((value.f >> shift) <= UINT_E9);
-  uint_fast32_t digit, body = static_cast<uint_fast32_t>(value.f >> shift);
-  uint64_t tail = value.f & mask;
+  assert((top >> shift) <= UINT_E9);
+  uint_fast32_t digit, body = static_cast<uint_fast32_t>(top >> shift);
+  uint64_t tail = top & mask;
   int kappa = dec_digits(body);
   assert(kappa > 0);
 
@@ -347,10 +346,10 @@ static inline char *make_digits(const diy_fp &value, uint64_t delta,
         *ptr++ = static_cast<char>(digit + '0');
       early_skip:
         inout_exp10 += kappa;
-#if ERTHINK_D2A_PEDANTRY_ACCURATE
         assert(kappa >= 0);
-        round(ptr, delta, tail, dec_power(unsigned(kappa)) << shift, gap.f);
-#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
+        if (accurate)
+          round(ptr, delta, tail, dec_power(unsigned(kappa)) << shift, gap,
+                inout_exp10);
         return ptr;
       }
 
@@ -358,10 +357,17 @@ static inline char *make_digits(const diy_fp &value, uint64_t delta,
         if (likely(digit))
           goto done;
         --kappa;
+#if ERTHINK_D2A_AVOID_MUL
+        tail += tail << 2;   // *= 5
+        delta += delta << 2; // *= 5
+        digit = static_cast<uint_fast32_t>(tail >> --shift);
+        tail &= (mask >>= 1);
+#else
         tail *= 10;
         delta *= 10;
         digit = static_cast<uint_fast32_t>(tail >> shift);
         tail &= mask;
+#endif /* ERTHINK_D2A_AVOID_MUL */
       }
     }
   } while (unlikely(digit == 0));
@@ -426,34 +432,43 @@ done:
   *ptr++ = static_cast<char>(digit + '0');
   while (likely(tail > delta)) {
     --kappa;
+#if ERTHINK_D2A_AVOID_MUL
+    tail += tail << 2;   // *= 5
+    delta += delta << 2; // *= 5
+    digit = static_cast<uint_fast32_t>(tail >> --shift);
+    tail &= (mask >>= 1);
+#else
     tail *= 10;
     delta *= 10;
     digit = static_cast<uint_fast32_t>(tail >> shift);
     tail &= mask;
+#endif /* ERTHINK_D2A_AVOID_MUL */
     *ptr++ = static_cast<char>(digit + '0');
   }
 
   inout_exp10 += kappa;
-#if ERTHINK_D2A_PEDANTRY_ACCURATE
   assert(kappa >= -19 && kappa <= 0);
-  const uint64_t unit = dec_power(unsigned(-kappa));
-  round(ptr, delta, tail, mask + 1, gap.f * unit);
-#endif /* ERTHINK_D2A_PEDANTRY_ACCURATE */
+  if (accurate) {
+    const uint64_t unit = dec_power(unsigned(-kappa));
+    round(ptr, delta, tail, mask + 1, gap * unit, inout_exp10);
+  }
   return ptr;
 }
 
-static inline char *convert(diy_fp v, char *const buffer, int &out_exp10) {
+static inline char *convert(const bool accurate, diy_fp v, char *const buffer,
+                            int &out_exp10) {
   if (unlikely(v.f == 0)) {
     out_exp10 = 0;
     *buffer = '0';
     return buffer + 1;
   }
 
-  const int left = clz64(v.f);
+  const int lead_zeros = clz64(v.f);
 #if 0 /* Given the remaining optimizations, on average it does not have a      \
-         positive effect, although a little faster in the simplest cases. */
+         positive effect, although a little faster in a simplest cases. */
   // LY: check to output as ordinal
-  if (unlikely(v.e >= -52 && v.e <= left && (v.e >= 0 || (v.f << (64 + v.e)) == 0))) {
+  if (unlikely(v.e >= -52 && v.e <= lead_zeros) &&
+      (v.e >= 0 || (v.f << (64 + v.e)) == 0)) {
     uint64_t ordinal = (v.e < 0) ? v.f >> -v.e : v.f << v.e;
     assert(v.f == ((v.e < 0) ? ordinal << -v.e : ordinal >> v.e));
     out_exp10 = 0;
@@ -462,22 +477,18 @@ static inline char *convert(diy_fp v, char *const buffer, int &out_exp10) {
 #endif
 
   // LY: normalize
-  assert(v.f <= UINT64_MAX / 2 && left > 1);
-  v.e -= left;
-  v.f <<= left;
+  assert(v.f <= UINT64_MAX / 2 && lead_zeros > 1);
+  v.e -= lead_zeros;
+  v.f <<= lead_zeros;
   const diy_fp dec_factor = cached_power(v.e, out_exp10);
 
   // LY: get boundaries
-  const int mojo = v.f >= UINT64_C(0x8000000080000000) ? left - 1 : left - 2;
-  const uint64_t half_epsilon = UINT64_C(1) << mojo;
-  diy_fp upper(v.f + half_epsilon, v.e);
-  diy_fp lower(v.f - half_epsilon, v.e);
-  upper.scale(dec_factor, false);
-  lower.scale(dec_factor, true);
-  --upper.f;
-  assert(upper.f > lower.f);
-  return make_digits(upper, upper.f - lower.f - 1, buffer, out_exp10,
-                     diy_fp::middle(upper, lower));
+  const int mojo =
+      v.f >= UINT64_C(0x8000000000001000) ? lead_zeros : lead_zeros - 1;
+  const uint64_t delta = (dec_factor.f >> (64 - mojo)) - 3;
+  v.scale(dec_factor, true);
+  return make_digits(accurate, v.f + delta / 2, delta, buffer, out_exp10, v.f,
+                     -v.e);
 }
 
 double inline cast(int64_t i64) {
@@ -503,15 +514,29 @@ int64_t inline cast(double f64) {
 
 } // namespace grisu
 
-static __maybe_unused char *
+enum { d2a_max_chars = 23 };
+
+template <bool accurate>
+/* The "accurate" controls the trade-off between conversion speed and accuracy:
+ *
+ *  - True: accurately conversion to impeccable string representation,
+ *    which will be a nearest to the actual binary value.
+ *
+ *  - False: conversion will be slightly faster and the result will also
+ *    be correct (inverse conversion via stdtod() will give the original value).
+ *    However, the string representation will be slightly larger than the ideal
+ *    nearest value. */
+char *
 d2a(const double &value,
-    char *const buffer /* upto 23 chars for -22250738585072014e-324 */) {
+    char *const
+        buffer /* upto erthink::d2a_max_chars for -22250738585072014e-324 */) {
   assert(!std::isnan(value) && !std::isinf(value));
   const int64_t i64 = grisu::cast(value);
   // LY: strive for branchless (SSA-optimizer must solve this)
   *buffer = '-';
   int exponent;
-  char *ptr = grisu::convert(grisu::diy_fp(i64), buffer + (i64 < 0), exponent);
+  char *ptr = grisu::convert(accurate, grisu::diy_fp(i64), buffer + (i64 < 0),
+                             exponent);
   if (exponent != 0) {
     const branchless_abs<int> pair(exponent);
     ptr[0] = 'e';
@@ -519,8 +544,20 @@ d2a(const double &value,
     ptr[1] = '+' + (('-' - '+') & pair.expanded_sign);
     ptr = dec3(pair.unsigned_abs, ptr + 2);
   }
-  assert(ptr - buffer <= 23);
+  assert(ptr - buffer <= d2a_max_chars);
   return ptr;
+}
+
+static __maybe_unused char *d2a_accurate(
+    const double &value,
+    char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
+  return d2a<true>(value, buffer);
+}
+
+static __maybe_unused char *d2a_fast(
+    const double &value,
+    char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
+  return d2a<false>(value, buffer);
 }
 
 } // namespace erthink
