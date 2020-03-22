@@ -9,15 +9,19 @@ Copyright(c) 2014 Milo Yip <miloyip@gmail.com>
 
 This fork of the benchmark was created to demonstrate the performance superiority of my new `dtoa()` implementation over others.
 
-[Ryū algorithm](https://github.com/ulfjack/ryu) by Ulf Adams known to fastest in much cases, especially for short string representations. However, I would like to draw attention to my own speed-competing but more compact Grisu2-based implementation.
+[Ryū algorithm](https://github.com/ulfjack/ryu) by Ulf Adams known to fastest in much cases, especially for short string representations. However, I would like to draw attention to my own speed-competing but more compact implementation.
 
 Briefly, about this double-to-string implementation:
 
-1. it is a Grisu-based, but not exactly the Grisu2;
+1. it is fastest Grisu-based, but not exactly the Grisu3 nor Grisu2;
 
-2. for now produces only a raw ASCII representation, e.g. `-22250738585072014e-324` without dot and `'\0'` at the end;
+2. compared to Ryū this implementation significantly less in code size and spends less clock cycles per digit, but may slightly inferior in a whole on a 16-17 digit values.
 
-3. compared to Ryū, it significantly less code size and spends less clock cycles per digit, but is slightly inferior in a whole because generates a longer ASCII representation.
+3. output string representation _always_ roundtrip convertible to the original value, i.e. `strtod()` for character string result will return the exactly original value.
+
+4. generated string representation is shortest for more than 99.95% of IEEE-754 double values, i.e. one extra digit for less than 0.05% values.
+
+5. for now produces only a raw ASCII representation, e.g. `-22250738585072014e-324` without dot and `'\0'` at the end;
 
 Now I would like to get feedback, assess how much this is in demand and collect suggestions for further improvements. For instance, I think that it is reasonable to implement conversion with a specified precision (i.e., with a specified number of digits), but not provide a printf-like interface.
 
