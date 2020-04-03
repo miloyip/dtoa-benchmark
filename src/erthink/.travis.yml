@@ -2,6 +2,11 @@ language: cpp
 sudo: false
 dist: xenial
 
+env:
+  global:
+    - GTEST_SHUFFLE=1
+    - GTEST_RUNTIME_LIMIT=199
+
 addons:
   apt:
 #    sources:

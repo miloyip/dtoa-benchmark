@@ -15,13 +15,10 @@
  *  limitations under the License.
  */
 
-#ifdef _MSC_VER
-#define _USE_MATH_DEFINES
-#endif
+#include "testing.h"
 
 #include "erthink_d2a.h"
 #include "erthink_defs.h"
-#include "testing.h"
 
 #ifdef _MSC_VER
 #pragma warning(push, 1)
@@ -34,57 +31,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-
-#ifdef TEST_D2A_CHECK_LAST_DIGIT_ROUNDING
-static std::string mantissa_str_map(const char *str, const bool strip_tail_0) {
-  const size_t len = strlen(str);
-  assert(len < 128);
-
-  std::string r;
-  r.reserve(len);
-
-  size_t i;
-  for (i = 0; i < len; ++i) {
-    if (str[i] >= '0' && str[i] <= '9') {
-      if (str[i] != '0' || !r.empty())
-        r.push_back(i);
-    } else if (str[i] != '-' && str[i] != '.')
-      break;
-  }
-
-  if (r.empty() && i > 0 && str[i - 1] == '0')
-    r.push_back(i - 1);
-  if (strip_tail_0)
-    while (i > 0 && str[i - 1] == '0' && r.size() > 1) {
-      r.pop_back();
-      --i;
-    }
-  return r;
-}
-
-static std::tuple<bool, int, int> mantissa_str_diff(const char *a,
-                                                    const std::string &ma,
-                                                    const char *b,
-                                                    const std::string &mb) {
-  size_t i, j;
-  for (i = j = 0;;) {
-    const bool a_end = i >= ma.size();
-    const bool b_end = j >= mb.size();
-    if (a_end && b_end)
-      break;
-
-    const char a_digit = a_end ? '0' : a[ma[i]];
-    const char b_digit = b_end ? '0' : b[mb[j]];
-    if (a_digit != b_digit)
-      return std::make_tuple(true, a_end ? ma.back() : ma[i],
-                             b_end ? mb.back() : mb[j]);
-
-    i += !a_end;
-    j += !b_end;
-  }
-  return std::make_tuple(false, 0, 0);
-}
-#endif /* TEST_D2A_CHECK_LAST_DIGIT_ROUNDING */
 
 struct P {
   const long double v;
@@ -101,6 +47,107 @@ template <typename T> struct d2a : public ::testing::Test {
   static constexpr bool accurate = T::value;
   static __hot __noinline char *convert(const double value, char *ptr) {
     return erthink::d2a<accurate>(value, ptr);
+  }
+
+  static std::string mantissa_str_map(const char *str,
+                                      const bool strip_tail_0) {
+    const size_t len = strlen(str);
+    assert(len < 128);
+
+    std::string r;
+    r.reserve(len);
+
+    size_t i;
+    for (i = 0; i < len; ++i) {
+      if (str[i] >= '0' && str[i] <= '9') {
+        if (str[i] != '0' || !r.empty())
+          r.push_back(i);
+      } else if (str[i] != '-' && str[i] != '.')
+        break;
+    }
+
+    if (r.empty() && i > 0 && str[i - 1] == '0')
+      r.push_back(i - 1);
+    if (strip_tail_0)
+      while (i > 0 && str[i - 1] == '0' && r.size() > 1) {
+        r.pop_back();
+        --i;
+      }
+    return r;
+  }
+
+  static std::tuple<bool, int, int> mantissa_str_diff(const char *a,
+                                                      const std::string &ma,
+                                                      const char *b,
+                                                      const std::string &mb) {
+    size_t i, j;
+    for (i = j = 0;;) {
+      const bool a_end = i >= ma.size();
+      const bool b_end = j >= mb.size();
+      if (a_end && b_end)
+        break;
+
+      const char a_digit = a_end ? '0' : a[int(ma[i])];
+      const char b_digit = b_end ? '0' : b[int(mb[j])];
+      if (a_digit != b_digit)
+        return std::make_tuple(true, a_end ? ma.back() : ma[i],
+                               b_end ? mb.back() : mb[j]);
+
+      i += !a_end;
+      j += !b_end;
+    }
+    return std::make_tuple(false, 0, 0);
+  }
+
+  static bool make_shorter(char (&str)[erthink::d2a_max_chars + 1]) {
+    if (str[0] == '-')
+      return false;
+
+    int i = 0;
+    while (str[i] >= '0' && str[i] <= '9')
+      ++i;
+    bool have_dot = false;
+    if (str[i] == '.') {
+      do
+        ++i;
+      while (str[i] >= '0' && str[i] <= '9');
+      have_dot = true;
+    }
+    if (i < 2 || str[i] != 'e')
+      return false;
+
+    int j = i - 1;
+    j -= str[j] == '.';
+    if (j < 1)
+      return false;
+
+    if (str[j] >= '5') {
+      j -= 1;
+      j -= str[j] == '.';
+      for (;;) {
+        assert(j >= 0 && str[j] != '.');
+        if (str[j] < '9') {
+          str[j] += 1;
+          break;
+        }
+        str[j] = '0';
+        j -= 1;
+        j -= (j >= 0 && str[j] == '.');
+        if (j < 0) {
+          j = str[0] == '.';
+          str[j] = '1';
+          have_dot = false;
+          break;
+        }
+      }
+    }
+
+    if (have_dot)
+      memmove(str + i - 1, str + i, erthink::d2a_max_chars - i);
+    else
+      snprintf(str + i - 1, erthink::d2a_max_chars - i + 1, "e%i",
+               atoi(str + i + 1) + 1);
+    return true;
   }
 
   void probe_d2a(char (&buffer)[erthink::d2a_max_chars + 1],
@@ -162,57 +209,6 @@ template <typename T> struct d2a : public ::testing::Test {
       probe_d2a(buffer, f32);
       return true;
     }
-  }
-
-  static bool make_shorter(char (&str)[erthink::d2a_max_chars + 1]) {
-    if (str[0] == '-')
-      return false;
-
-    int i = 0;
-    while (str[i] >= '0' && str[i] <= '9')
-      ++i;
-    bool have_dot = false;
-    if (str[i] == '.') {
-      do
-        ++i;
-      while (str[i] >= '0' && str[i] <= '9');
-      have_dot = true;
-    }
-    if (i < 2 || str[i] != 'e')
-      return false;
-
-    int j = i - 1;
-    j -= str[j] == '.';
-    if (j < 1)
-      return false;
-
-    if (str[j] >= '5') {
-      j -= 1;
-      j -= str[j] == '.';
-      for (;;) {
-        assert(j >= 0 && str[j] != '.');
-        if (str[j] < '9') {
-          str[j] += 1;
-          break;
-        }
-        str[j] = '0';
-        j -= 1;
-        j -= (j >= 0 && str[j] == '.');
-        if (j < 0) {
-          j = str[0] == '.';
-          str[j] = '1';
-          have_dot = false;
-          break;
-        }
-      }
-    }
-
-    if (have_dot)
-      memmove(str + i - 1, str + i, erthink::d2a_max_chars - i);
-    else
-      snprintf(str + i - 1, erthink::d2a_max_chars - i + 1, "e%i",
-               atoi(str + i + 1) + 1);
-    return true;
   }
 
   void ensure_shortest(const double value,
@@ -326,6 +322,8 @@ TYPED_TEST_P(d2a, stairwell) {
           TestFixture::probe_d2a((mantissa + offset) ^ exp ^ bit, buffer);
           TestFixture::probe_d2a((mantissa - offset) ^ exp ^ bit, buffer);
         }
+        if (GTEST_IS_EXECUTION_TIMEOUT())
+          break;
       }
     }
   }
@@ -339,6 +337,8 @@ TYPED_TEST_P(d2a, random3e7) {
     i += TestFixture::probe_d2a(prng, buffer);
     prng *= UINT64_C(6364136223846793005);
     prng += UINT64_C(1442695040888963407);
+    if (GTEST_IS_EXECUTION_TIMEOUT())
+      break;
   }
 }
 
@@ -349,6 +349,8 @@ REGISTER_TYPED_TEST_SUITE_P(d2a, trivia, stairwell, random3e7);
 INSTANTIATE_TYPED_TEST_SUITE_P(accurate, d2a, std::true_type);
 INSTANTIATE_TYPED_TEST_SUITE_P(fast, d2a, std::false_type);
 #endif
+
+runtime_limiter ci_runtime_limiter;
 
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);

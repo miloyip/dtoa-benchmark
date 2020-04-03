@@ -3,6 +3,9 @@ jobs:
   build:
     docker:
       - image: circleci/buildpack-deps:bionic-browsers
+    environment:
+      GTEST_SHUFFLE: 1
+      GTEST_RUNTIME_LIMIT: 199
     steps:
       - run: sudo apt update -q && sudo apt install cmake libgtest-dev clang-format-6.0
       - checkout
@@ -11,7 +14,9 @@ jobs:
       - run: cmake --version
       - run: cmake .
       - run: make --keep-going all
-      - run: ulimit -c unlimited && make --keep-going test
+      - run: |
+          ulimit -c unlimited
+          make --keep-going test
       - run:
           command: |
             mkdir -p /tmp/artifacts

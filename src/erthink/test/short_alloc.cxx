@@ -15,9 +15,10 @@
  *  limitations under the License.
  */
 
+#include "testing.h"
+
 #include "erthink_defs.h"
 #include "erthink_short_alloc.h"
-#include "testing.h"
 
 #if __GLIBC_PREREQ(2, 4)
 #include <malloc.h>

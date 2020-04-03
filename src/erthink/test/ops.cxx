@@ -15,14 +15,14 @@
  *  limitations under the License.
  */
 
+#include "testing.h"
+
 #include "erthink_arch.h"
 #include "erthink_bswap.h"
 #include "erthink_clz.h"
 #include "erthink_defs.h"
 #include "erthink_endian.h"
 #include "erthink_intrin.h"
-
-#include "testing.h"
 
 //------------------------------------------------------------------------------
 

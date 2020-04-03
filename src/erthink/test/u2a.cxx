@@ -15,9 +15,10 @@
  *  limitations under the License.
  */
 
+#include "testing.h"
+
 #include "erthink_defs.h"
 #include "erthink_u2a.h"
-#include "testing.h"
 
 __hot __dll_export __noinline char *_dec2(const unsigned value, char *ptr) {
   return erthink::dec2(value, ptr);

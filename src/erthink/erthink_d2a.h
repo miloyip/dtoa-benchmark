@@ -17,14 +17,20 @@
 
 #pragma once
 
-/* Double-to-string conversion based on Grisu algorithm by Florian Loitsch,
+/* Double-to-string conversion based on Grisu algorithm by Florian Loitsch
  * https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
  *
- * 1. Generated string representation always roundtrip convertible to
- *    the original value, i.e. by strtod() function.
+ * Seems this is the fastest Grisu-based implementation,
+ * but it is not exactly Grisu3 nor Grisu2:
  *
- * 2. Generated string representation is shortest for more than 99.95% of
- *    IEEE-754 double values, i.e. one extra digit for less than 0.05% values.
+ * 1. Generated string representation ALWAYS roundtrip convertible to
+ *    the original value, i.e. any correct implementation of strtod()
+ *    will always return EXACTLY the origin double value.
+ *
+ * 2. Generated string representation is shortest for more than 99.963% of
+ *    IEEE-754 double values, i.e. one extra digit for less that 0.037% values.
+ *    Moreover, for less than 0.06% of double values, the last digit differs
+ *    from an ideal nearest by ±1.
  *
  * 3. Compared to Ryū algorithm (by Ulf Adams), this implementation
  *    significantly less in code size and spends less clock cycles per digit,
@@ -167,12 +173,11 @@ struct diy_fp {
     return diy_fp(upper.f - uint64_t(diff >> 1), upper.e);
   }
 
-  void scale(const diy_fp &factor, bool roundup) {
+  uint_fast32_t scale(const diy_fp &factor) {
     const uint64_t l = mul_64x64_128(f, factor.f, &f);
     assert(f < UINT64_MAX - INT32_MAX);
-    if (roundup)
-      f += l >> 63;
     e += factor.e + 64;
+    return static_cast<uint_fast32_t>(l >> 63);
   }
 
   diy_fp operator-(const diy_fp &rhs) const {
@@ -274,12 +279,12 @@ static __always_inline void round(char *&end, uint64_t delta, uint64_t rest,
          (rest + ten_kappa < upper ||
           (rest < upper &&
            /* closer */ upper - rest >= rest + ten_kappa - upper))) {
-    if (unlikely(end[-1] < '2')) {
+    end[-1] -= 1;
+    if (unlikely(end[-1] < '1')) {
       inout_exp10 += 1;
       end -= 1;
       return;
     }
-    end[-1] -= 1;
     rest += ten_kappa;
   }
 }
@@ -464,17 +469,17 @@ static inline char *convert(const bool accurate, diy_fp v, char *const buffer,
   }
 
   const int lead_zeros = clz64(v.f);
-#if 0 /* Given the remaining optimizations, on average it does not have a      \
-         positive effect, although a little faster in a simplest cases. */
-  // LY: check to output as ordinal
-  if (unlikely(v.e >= -52 && v.e <= lead_zeros) &&
+  /* Check to output as ordinal.
+   * Given the remaining optimizations, on average it does not have a positive
+   * effect (although a little faster in a simplest cases).
+   * However, it reduces the number of inaccuracies and non-shortest strings. */
+  if (!accurate && unlikely(v.e >= -52 && v.e <= lead_zeros) &&
       (v.e >= 0 || (v.f << (64 + v.e)) == 0)) {
     uint64_t ordinal = (v.e < 0) ? v.f >> -v.e : v.f << v.e;
     assert(v.f == ((v.e < 0) ? ordinal << -v.e : ordinal >> v.e));
     out_exp10 = 0;
     return u2a(ordinal, buffer);
   }
-#endif
 
   // LY: normalize
   assert(v.f <= UINT64_MAX / 2 && lead_zeros > 1);
@@ -483,12 +488,20 @@ static inline char *convert(const bool accurate, diy_fp v, char *const buffer,
   const diy_fp dec_factor = cached_power(v.e, out_exp10);
 
   // LY: get boundaries
-  const int mojo =
-      v.f >= UINT64_C(0x8000000000001000) ? lead_zeros : lead_zeros - 1;
-  const uint64_t delta = (dec_factor.f >> (64 - mojo)) - 3;
-  v.scale(dec_factor, true);
-  return make_digits(accurate, v.f + delta / 2, delta, buffer, out_exp10, v.f,
-                     -v.e);
+  const int mojo = v.f > UINT64_C(0x80000000000007ff) ? 64 : 65;
+  const uint64_t delta = dec_factor.f >> (mojo - lead_zeros);
+  assert(delta >= 2);
+  const uint_fast32_t lsb = v.scale(dec_factor);
+  if (accurate)
+    // -1 -2 1 0 1: non-shortest 9522 for 25M probes, ratio 0.038088%
+    //              shortest errors: +5727 -9156
+    //              non-shortest errors: +3 -5
+    return make_digits(accurate, v.f + ((delta + lsb - 1) >> 1), delta - 2,
+                       buffer, out_exp10, v.f + lsb, -v.e);
+  else
+    // -1 -2 1 0 0: non-shortest 9522 for 25M probes, ratio 0.038088%
+    return make_digits(accurate, v.f + ((delta + lsb - 1) >> 1), delta - 2,
+                       buffer, out_exp10, v.f, -v.e);
 }
 
 double inline cast(int64_t i64) {
@@ -548,13 +561,13 @@ d2a(const double &value,
   return ptr;
 }
 
-static __maybe_unused char *d2a_accurate(
+static inline __maybe_unused char *d2a_accurate(
     const double &value,
     char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
   return d2a<true>(value, buffer);
 }
 
-static __maybe_unused char *d2a_fast(
+static inline __maybe_unused char *d2a_fast(
     const double &value,
     char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
   return d2a<false>(value, buffer);

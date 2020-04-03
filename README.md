@@ -13,17 +13,20 @@ This fork of the benchmark was created to demonstrate the performance superiorit
 
 Briefly, about this double-to-string implementation:
 
-1. it is fastest Grisu-based, but not exactly the Grisu3 nor Grisu2;
+1. It is fastest Grisu-based, but not exactly the Grisu3 nor Grisu2;
 
-2. compared to Ryū this implementation significantly less in code size and spends less clock cycles per digit, but may slightly inferior in a whole on a 16-17 digit values.
+2. Compared to Ryū this implementation significantly less in code size and spends less clock cycles per digit, but may slightly inferior in a whole on a 16-17 digit values.
 
-3. output string representation _always_ roundtrip convertible to the original value, i.e. `strtod()` for character string result will return the exactly original value.
+3. Output string representation _always_ roundtrip convertible to the original value, i.e. `strtod()` for character string result will return the exactly original value.
 
-4. generated string representation is shortest for more than 99.95% of IEEE-754 double values, i.e. one extra digit for less than 0.05% values.
+4. Generated string representation is shortest for more than `99.963%` of
+IEEE-754 double values, i.e. one extra digit for less that `0.037%` values.
+Moreover, for less than `0.06%` of double values, the last digit differs
+from an ideal nearest by `±1`.
 
-5. for now produces only a raw ASCII representation, e.g. `-22250738585072014e-324` without dot and `'\0'` at the end;
+5. For now produces only a raw ASCII representation, e.g. `-22250738585072014e-324` without dot and `'\0'` at the end;
 
-Now I would like to get feedback, assess how much this is in demand and collect suggestions for further improvements. For instance, I think that it is reasonable to implement conversion with a specified precision (i.e., with a specified number of digits), but not provide a printf-like interface.
+Now I would like to get feedback, assess how much this is in demand and collect suggestions for further improvements. For instance, I think that it is reasonable to implement conversion with a specified precision (i.e., with a specified number of digits), but not provide a printf-like interface. For more into see [issue#1](https://github.com/erthink/erthink/issues/1).
 
 Any suggestions are welcome!
 
@@ -96,7 +99,7 @@ More [clickable charts](https://erthink.github.io/dtoa-benchmark/results/randomd
 
 Function      | Description
 --------------|-----------
-[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu2-based C++ implementation.
+[erthink](https://github.com/erthink/erthink/blob/master/erthink_d2a.h) | Leonid Yuriev's Grisu-based C++ implementation.
 [ryu](https://github.com/ulfjack/ryu) | Ulf Adams's [Ryū algorithm](https://dl.acm.org/citation.cfm?id=3192369).
 [emyg](https://github.com/miloyip/dtoa-benchmark/blob/master/src/emyg/emyg_dtoa.c) | C version of Milo Yip's Grisu2 implementation by Doug Currie.
 [milo](https://github.com/miloyip/dtoa-benchmark/blob/master/src/milo/dtoa_milo.h) | Milo Yip's Grisu2 C++ implementation for RapidJSON.
