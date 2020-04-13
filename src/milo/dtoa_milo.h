@@ -9,6 +9,12 @@
 #include <stdint.h>
 #endif
 
+namespace gcc_ints
+{
+    __extension__ typedef __int128 int128;
+    __extension__ typedef unsigned __int128 uint128;
+}
+
 #define UINT64_C2(h, l) ((static_cast<uint64_t>(h) << 32) | static_cast<uint64_t>(l))
 
 struct DiyFp {
@@ -48,7 +54,7 @@ struct DiyFp {
 			h++;
 		return DiyFp(h, e + rhs.e + 64);
 #elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && defined(__x86_64__)
-		unsigned __int128 p = static_cast<unsigned __int128>(f) * static_cast<unsigned __int128>(rhs.f);
+        gcc_ints::uint128 p = static_cast<gcc_ints::uint128>(f) * static_cast<gcc_ints::uint128>(rhs.f);
 		uint64_t h = p >> 64;
 		uint64_t l = static_cast<uint64_t>(p);
 		if (l & (uint64_t(1) << 63)) // rounding
@@ -191,7 +197,7 @@ inline DiyFp GetCachedPower(int e, int* K) {
 	//int k = static_cast<int>(ceil((-61 - e) * 0.30102999566398114)) + 374;
 	double dk = (-61 - e) * 0.30102999566398114 + 347;	// dk must be positive, so can do ceiling in positive
 	int k = static_cast<int>(dk);
-	if (k != dk)
+	if (dk - k >= DBL_MAX)
 		k++;
 
 	unsigned index = static_cast<unsigned>((k >> 3) + 1);
