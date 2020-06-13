@@ -37,14 +37,19 @@ struct P {
   P(const long double v) : v(v) {}
   friend bool operator==(const P &a, const P &b) { return a.v == b.v; }
   friend bool operator!=(const P &a, const P &b) { return a.v != b.v; }
-  friend std::ostream &operator<<(std::ostream &os, const P &v) {
-    return os << std::setprecision(19) << v.v << '(' << std::hexfloat << v.v
-              << ')';
+  friend std::ostream &operator<<(std::ostream &out, const P &v) {
+    const auto save_fmtfl = out.flags();
+    const auto safe_precision = out.precision(19);
+    out << v.v << '(' << std::hexfloat << v.v << ')';
+    out.precision(safe_precision);
+    out.flags(save_fmtfl);
+    return out;
   }
 };
 
 template <typename T> struct d2a : public ::testing::Test {
-  static constexpr bool accurate = T::value;
+  static cxx11_constexpr_var bool accurate = T::value;
+
   static __hot __noinline char *convert(const double value, char *ptr) {
     return erthink::d2a<accurate>(value, ptr);
   }
@@ -254,6 +259,7 @@ TYPED_TEST_P(d2a, trivia) {
   TestFixture::probe_d2a(buffer, -3.0);
   TestFixture::probe_d2a(buffer, M_PI);
   TestFixture::probe_d2a(buffer, -M_PI);
+  TestFixture::probe_d2a(buffer, 546653e-6 /* ERRATA.GRISU2 */);
 
   TestFixture::probe_d2a(buffer, INT32_MIN);
   TestFixture::probe_d2a(buffer, INT32_MAX);

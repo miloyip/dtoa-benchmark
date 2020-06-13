@@ -73,37 +73,37 @@ enum class endian {
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htobe16)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htole16)(uint16_t x) { return x; }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(be16toh)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(le16toh)(uint16_t x) { return x; }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htobe16)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htole16)(uint16_t x) { return x; }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(be16toh)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(le16toh)(uint16_t x) { return x; }
 
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htobe32)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htole32)(uint32_t x) { return x; }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(be32toh)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(le32toh)(uint32_t x) { return x; }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htobe32)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htole32)(uint32_t x) { return x; }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(be32toh)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(le32toh)(uint32_t x) { return x; }
 
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htobe64)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htole64)(uint64_t x) { return x; }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(be64toh)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(le64toh)(uint64_t x) { return x; }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htobe64)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htole64)(uint64_t x) { return x; }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(be64toh)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(le64toh)(uint64_t x) { return x; }
 
 #else
 
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htobe16)(uint16_t x) { return x; }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htole16)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(be16toh)(uint16_t x) { return x; }
-static __inline constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(le16toh)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htobe16)(uint16_t x) { return x; }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(htole16)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(be16toh)(uint16_t x) { return x; }
+static constexpr_intrin uint16_t ERTHINK_NAME_PREFIX(le16toh)(uint16_t x) { return ERTHINK_NAME_PREFIX(bswap16)(x); }
 
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htobe32)(uint32_t x) { return x; }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htole32)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(be32toh)(uint32_t x) { return x; }
-static __inline constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(le32toh)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htobe32)(uint32_t x) { return x; }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(htole32)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(be32toh)(uint32_t x) { return x; }
+static constexpr_intrin uint32_t ERTHINK_NAME_PREFIX(le32toh)(uint32_t x) { return ERTHINK_NAME_PREFIX(bswap32)(x); }
 
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htobe64)(uint64_t x) { return x; }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htole64)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(be64toh)(uint64_t x) { return x; }
-static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(le64toh)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htobe64)(uint64_t x) { return x; }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(htole64)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(be64toh)(uint64_t x) { return x; }
+static constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(le64toh)(uint64_t x) { return ERTHINK_NAME_PREFIX(bswap64)(x); }
 
 #endif
 
@@ -112,16 +112,14 @@ static __inline constexpr_intrin uint64_t ERTHINK_NAME_PREFIX(le64toh)(uint64_t 
 
 #ifdef __cplusplus
 
-template <typename T> inline constexpr_intrin T h2le(T v);
-template <typename T> inline constexpr_intrin T h2be(T v);
-template <typename T> inline constexpr_intrin T le2h(T v);
-template <typename T> inline constexpr_intrin T be2h(T v);
+template <typename T> constexpr_intrin T h2le(T v);
+template <typename T> constexpr_intrin T h2be(T v);
+template <typename T> constexpr_intrin T le2h(T v);
+template <typename T> constexpr_intrin T be2h(T v);
 
 #define HERE_MAKE(FN)                                                          \
-  template <> inline constexpr_intrin uint8_t FN<uint8_t>(uint8_t v) {         \
-    return v;                                                                  \
-  }                                                                            \
-  template <> inline constexpr_intrin int8_t FN<int8_t>(int8_t v) { return v; }
+  template <> constexpr_intrin uint8_t FN<uint8_t>(uint8_t v) { return v; }    \
+  template <> constexpr_intrin int8_t FN<int8_t>(int8_t v) { return v; }
 HERE_MAKE(h2le)
 HERE_MAKE(h2be)
 HERE_MAKE(le2h)
@@ -130,22 +128,21 @@ HERE_MAKE(be2h)
 
 #define HERE_MAKE(CASE, WIDTH)                                                 \
   template <>                                                                  \
-  inline constexpr_intrin uint##WIDTH##_t h2##CASE<uint##WIDTH##_t>(           \
+  constexpr_intrin uint##WIDTH##_t h2##CASE<uint##WIDTH##_t>(                  \
       uint##WIDTH##_t v) {                                                     \
     return hto##CASE##WIDTH(v);                                                \
   }                                                                            \
   template <>                                                                  \
-  inline constexpr_intrin int##WIDTH##_t h2##CASE<int##WIDTH##_t>(             \
-      int##WIDTH##_t v) {                                                      \
+  constexpr_intrin int##WIDTH##_t h2##CASE<int##WIDTH##_t>(int##WIDTH##_t v) { \
     return hto##CASE##WIDTH(v);                                                \
   }                                                                            \
   template <>                                                                  \
-      inline constexpr_intrin uint##WIDTH##_t CASE##2h < uint##WIDTH##_t >     \
+      constexpr_intrin uint##WIDTH##_t CASE##2h < uint##WIDTH##_t >            \
       (uint##WIDTH##_t v) {                                                    \
     return CASE##WIDTH##toh(v);                                                \
   }                                                                            \
   template <>                                                                  \
-      inline constexpr_intrin int##WIDTH##_t CASE##2h < int##WIDTH##_t >       \
+      constexpr_intrin int##WIDTH##_t CASE##2h < int##WIDTH##_t >              \
       (int##WIDTH##_t v) {                                                     \
     return CASE##WIDTH##toh(v);                                                \
   }

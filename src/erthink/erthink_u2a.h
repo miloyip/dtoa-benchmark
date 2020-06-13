@@ -17,6 +17,10 @@
 
 #pragma once
 
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#error "This source code requires C++11 at least."
+#endif
+
 #include "erthink_misc.h"
 
 #ifdef _MSC_VER
@@ -43,7 +47,7 @@ namespace erthink {
 namespace NAMESPACE_ERTHINK_U2A_DETAILS {
 
 template <typename T = uint_fast64_t>
-static constexpr T power10_recursive_constexpr(const unsigned n) {
+static cxx11_constexpr T power10_recursive_constexpr(const unsigned n) {
   return n ? T(10) * power10_recursive_constexpr<T>(n - 1) : 1;
 }
 

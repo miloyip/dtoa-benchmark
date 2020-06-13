@@ -30,7 +30,8 @@
 #include <stack>
 
 template <std::size_t SIZE> struct Params {
-  static constexpr std::size_t area_size = SIZE * alignof(std::max_align_t);
+  static cxx11_constexpr_var std::size_t area_size =
+      SIZE * alignof(std::max_align_t);
   using arena_NOoutlive_type = erthink::allocation_arena<false, area_size>;
   using alloc_NOoutlive_type = erthink::short_alloc<char, arena_NOoutlive_type>;
 
@@ -87,7 +88,7 @@ TYPED_TEST_P(ShortAlloc, stack_NOoutlive) {
       short_alloc.deallocate(ptr, item_size);
     }
 
-    EXPECT_EQ(0, arena->used());
+    EXPECT_EQ(0u, arena->used());
   }
 }
 
@@ -127,9 +128,9 @@ TYPED_TEST_P(ShortAlloc, fifo_NOoutlive) {
     }
 
     if (single_allocation) {
-      EXPECT_EQ(0, arena->used());
+      EXPECT_EQ(0u, arena->used());
     } else {
-      EXPECT_LT(0, arena->used());
+      EXPECT_LT(0u, arena->used());
       EXPECT_GT(used_while_exhausted, arena->used());
     }
   }
@@ -168,7 +169,7 @@ TYPED_TEST_P(ShortAlloc, stack_outlive) {
       short_alloc.deallocate(ptr, item_size);
     }
 
-    EXPECT_EQ(0, arena->used());
+    EXPECT_EQ(0u, arena->used());
   }
 }
 
@@ -210,9 +211,10 @@ TYPED_TEST_P(ShortAlloc, fifo_outlive) {
     }
 
     if (allocations_inside_arena < 2) {
-      EXPECT_EQ(0, arena->used());
+      EXPECT_EQ(0u, arena->used());
     } else {
-      EXPECT_LT(0, arena->used());
+      EXPECT_LT(0u, arena->used());
+      EXPECT_LT(0u, arena->used());
       EXPECT_GT(max_used, arena->used());
     }
   }

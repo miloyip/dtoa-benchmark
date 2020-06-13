@@ -18,7 +18,7 @@
 #pragma once
 
 #ifdef _MSC_VER
-#if defined(_MSC_VER)
+#ifndef _STL_WARNING_LEVEL
 #define _STL_WARNING_LEVEL 3
 #endif
 #pragma warning(push, 1)
@@ -118,6 +118,10 @@
 #include <stdalign.h>
 #endif
 
+#if defined(__cplusplus) && __has_include(<version>)
+#include <version>
+#endif
+
 //------------------------------------------------------------------------------
 
 #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
@@ -146,6 +150,13 @@
 #ifndef false
 #define false 0
 #endif
+#ifndef char8_t
+#define char8_t char
+#endif
+#endif
+
+#if !defined(char8_t) && !defined(__cpp_lib_char8_t)
+#define char8_t char
 #endif
 
 #ifndef __fallthrough
@@ -167,55 +178,119 @@
 #define nullptr NULL
 #endif /* nullptr */
 
-#if !defined(noexcept) && (!defined(__cplusplus) || __cplusplus < 201103L)
-#define noexcept
-#endif /* noexcept */
+#if !defined(cxx11_noexcept)
+#if defined(__cplusplus) && __cplusplus >= 201103L
+#define cxx11_noexcept noexcept
+#else
+#define cxx11_noexcept
+#endif
+#endif /* cxx11_noexcept */
 
-#if !defined(constexpr) && (!defined(__cplusplus) || __cplusplus < 201103L)
-#define constexpr
-#endif /* constexpr */
+#if !defined(cxx17_noexcept)
+#if !defined(__cpp_noexcept_function_type) ||                                  \
+    __cpp_noexcept_function_type < 201510L
+#define cxx17_noexcept
+#else
+#define cxx17_noexcept noexcept
+#endif
+#endif /* cxx17_noexcept */
+
+#if !defined(cxx11_constexpr)
+#if !defined(__cplusplus)
+#define cxx11_constexpr __inline
+#define cxx11_constexpr_var const
+#elif __cplusplus < 201103L
+#define cxx11_constexpr inline
+#define cxx11_constexpr_var const
+#else
+#define cxx11_constexpr constexpr
+#define cxx11_constexpr_var constexpr
+#endif
+#endif /* cxx11_constexpr */
 
 #if !defined(cxx14_constexpr)
-#if defined(__cplusplus) && __cplusplus >= 201402L &&                          \
-    (!defined(_MSC_VER) || _MSC_VER >= 1910) &&                                \
-    (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 6)
+#if !defined(__cplusplus)
+#define cxx14_constexpr __inline
+#define cxx14_constexpr_var const
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L &&                \
+    ((defined(_MSC_VER) && _MSC_VER >= 1910) ||                                \
+     (defined(__clang__) && __clang_major__ > 4) ||                            \
+     (defined(__GNUC__) && __GNUC__ > 6) ||                                    \
+     (!defined(__GNUC__) && !defined(__clang__) && !defined(_MSC_VER)))
 #define cxx14_constexpr constexpr
+#define cxx14_constexpr_var constexpr
 #else
-#define cxx14_constexpr
+#define cxx14_constexpr inline
+#define cxx14_constexpr_var const
 #endif
 #endif /* cxx14_constexpr */
 
 #if !defined(cxx17_constexpr)
-#if defined(__cplusplus) && __cplusplus >= 201703L &&                          \
-    (!defined(_MSC_VER) || _MSC_VER >= 1915) &&                                \
-    (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 7)
+#if !defined(__cplusplus)
+#define cxx17_constexpr __inline
+#define cxx17_constexpr_var const
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201603L &&                \
+    ((defined(_MSC_VER) && _MSC_VER >= 1915) ||                                \
+     (defined(__clang__) && __clang_major__ > 5) ||                            \
+     (defined(__GNUC__) && __GNUC__ > 7) ||                                    \
+     (!defined(__GNUC__) && !defined(__clang__) && !defined(_MSC_VER)))
 #define cxx17_constexpr constexpr
-#define cxx17_noexcept noexcept
-#define if_constexpr if constexpr
+#define cxx17_constexpr_var constexpr
 #else
-#define cxx17_constexpr
-#define cxx17_noexcept
-#define if_constexpr if
+#define cxx17_constexpr inline
+#define cxx17_constexpr_var const
 #endif
 #endif /* cxx17_constexpr */
 
-#if !defined(constexpr_assert) && defined(__cplusplus)
-#if defined(HAS_RELAXED_CONSTEXPR) ||                                          \
-    (__cplusplus >= 201408L && (!defined(_MSC_VER) || _MSC_VER >= 1915) &&     \
-     (!defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 6))
+#if !defined(cxx20_constexpr)
+#if !defined(__cplusplus)
+#define cxx20_constexpr __inline
+#define cxx20_constexpr_var const
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201907L
+#define cxx20_constexpr constexpr
+#define cxx20_constexpr_var constexpr
+#else
+#define cxx20_constexpr inline
+#define cxx20_constexpr_var const
+#endif
+#endif /* cxx20_constexpr */
+
+#if !defined(if_constexpr)
+#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+#define if_constexpr if constexpr
+#else
+#define if_constexpr if
+#endif
+#endif /* if_constexpr */
+
+#if !defined(constexpr_assert)
+#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
 #define constexpr_assert(cond) assert(cond)
 #else
-#define constexpr_assert(foo)
+#define constexpr_assert(cond)                                                 \
+  do {                                                                         \
+    (void)(cond);                                                              \
+  } while (0)
 #endif
 #endif /* constexpr_assert */
 
 #ifndef NDEBUG_CONSTEXPR
 #ifdef NDEBUG
-#define NDEBUG_CONSTEXPR constexpr
+#define NDEBUG_CONSTEXPR cxx11_constexpr
 #else
 #define NDEBUG_CONSTEXPR
 #endif
 #endif /* NDEBUG_CONSTEXPR */
+
+#ifndef constexpr_intrin
+#if defined(__GNUC__) || defined(__clang__)
+#define constexpr_intrin cxx11_constexpr
+#elif defined(__cplusplus)
+#define constexpr_intrin inline
+#else
+#define constexpr_intrin __inline
+#endif
+#endif /* constexpr_intrin */
 
 /* Crutch for case when OLD GLIBC++ (without std::max_align_t)
  * is coupled with MODERN C++ COMPILER (with __cpp_aligned_new) */
@@ -236,14 +311,6 @@
 #endif
 #endif /* ERTHINK_NAME_PREFIX */
 
-#ifndef constexpr_intrin
-#ifdef __GNUC__
-#define constexpr_intrin constexpr
-#else
-#define constexpr_intrin
-#endif
-#endif /* constexpr_intrin */
-
 //------------------------------------------------------------------------------
 
 #if defined(__GNUC__) || __has_attribute(__format__)
@@ -253,14 +320,15 @@
 #define __printf_args(format_index, first_arg)
 #endif
 
-#if !defined(__thread) && (defined(_MSC_VER) || defined(__DMC__))
+#if !defined(__thread) &&                                                      \
+    ((defined(_MSC_VER) && !defined(__clang__)) || defined(__DMC__))
 #define __thread __declspec(thread)
 #endif /* __thread */
 
 #ifndef __always_inline
 #if defined(__GNUC__) || __has_attribute(__always_inline__)
 #define __always_inline __inline __attribute__((__always_inline__))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define __always_inline __forceinline
 #else
 #define __always_inline
@@ -278,7 +346,7 @@
 #ifndef __deprecated
 #if defined(__GNUC__) || __has_attribute(__deprecated__)
 #define __deprecated __attribute__((__deprecated__))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define __deprecated __declspec(deprecated)
 #else
 #define __deprecated
@@ -288,7 +356,7 @@
 #ifndef __noreturn
 #if defined(__GNUC__) || __has_attribute(__noreturn__)
 #define __noreturn __attribute__((__noreturn__))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define __noreturn __declspec(noreturn)
 #else
 #define __noreturn
@@ -304,7 +372,7 @@
 #endif /* __cplusplus */
 #elif defined(__GNUC__) || __has_attribute(__nothrow__)
 #define __nothrow __attribute__((__nothrow__))
-#elif defined(_MSC_VER) && defined(__cplusplus)
+#elif defined(_MSC_VER) && !defined(__clang__) && defined(__cplusplus)
 #define __nothrow __declspec(nothrow)
 #else
 #define __nothrow
@@ -402,7 +470,7 @@
 #ifndef __noinline
 #if defined(__GNUC__) || __has_attribute(__noinline__)
 #define __noinline __attribute__((__noinline__))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define __noinline __declspec(noinline)
 #else
 #define __noinline
@@ -485,7 +553,7 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #endif
 #endif /* __noop */
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #define ERTHINK_PACKED_STRUCT(name)                                            \
   __pragma(pack(push, 1)) struct name __pragma(pack(pop))
 #elif defined(__GNUC__) || __has_attribute(__packed__)
@@ -497,7 +565,7 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #ifndef __unreachable
 #if __GNUC_PREREQ(4, 5)
 #define __unreachable() __builtin_unreachable()
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define __unreachable() __assume(0)
 #else
 #define __unreachable() __noop()
@@ -523,7 +591,7 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #if !defined(alignas) && (!defined(__cplusplus) || __cplusplus < 201103L)
 #if defined(__GNUC__) || defined(__clang__) || __has_attribute(__aligned__)
 #define alignas(N) __attribute__((__aligned__(N)))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 #define alignas(N) __declspec(align(N))
 #else
 #error "C++11 or C11 compiler is required"
@@ -533,7 +601,7 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 //------------------------------------------------------------------------------
 
 #if !defined(__typeof)
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #define __typeof(exp) decltype(exp)
 #else
 #define __typeof(exp) __typeof__(exp)
@@ -565,25 +633,19 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 // used to define flags (based on Microsoft's DEFINE_ENUM_FLAG_OPERATORS).
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUM)                                       \
   extern "C++" {                                                               \
-  constexpr inline ENUM operator|(ENUM a, ENUM b) {                            \
+  cxx11_constexpr ENUM operator|(ENUM a, ENUM b) {                             \
     return ENUM(std::size_t(a) | std::size_t(b));                              \
   }                                                                            \
-  cxx14_constexpr inline ENUM &operator|=(ENUM &a, ENUM b) {                   \
-    return a = a | b;                                                          \
-  }                                                                            \
-  constexpr inline ENUM operator&(ENUM a, ENUM b) {                            \
+  cxx14_constexpr ENUM &operator|=(ENUM &a, ENUM b) { return a = a | b; }      \
+  cxx11_constexpr ENUM operator&(ENUM a, ENUM b) {                             \
     return ENUM(std::size_t(a) & std::size_t(b));                              \
   }                                                                            \
-  cxx14_constexpr inline ENUM &operator&=(ENUM &a, ENUM b) {                   \
-    return a = a & b;                                                          \
-  }                                                                            \
-  constexpr inline ENUM operator~(ENUM a) { return ENUM(~std::size_t(a)); }    \
-  constexpr inline ENUM operator^(ENUM a, ENUM b) {                            \
+  cxx14_constexpr ENUM &operator&=(ENUM &a, ENUM b) { return a = a & b; }      \
+  cxx11_constexpr ENUM operator~(ENUM a) { return ENUM(~std::size_t(a)); }     \
+  cxx11_constexpr ENUM operator^(ENUM a, ENUM b) {                             \
     return ENUM(std::size_t(a) ^ std::size_t(b));                              \
   }                                                                            \
-  cxx14_constexpr inline ENUM &operator^=(ENUM &a, ENUM b) {                   \
-    return a = a ^ b;                                                          \
-  }                                                                            \
+  cxx14_constexpr ENUM &operator^=(ENUM &a, ENUM b) { return a = a ^ b; }      \
   }
 #else                                    /* __cplusplus */
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUM) /* nope, C allows these operators */

@@ -17,6 +17,10 @@
 
 #pragma once
 
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#error "This source code requires C++11 at least."
+#endif
+
 #include "erthink_arch.h"
 #include "erthink_defs.h"
 #include "erthink_intrin.h"
@@ -31,7 +35,7 @@
 
 namespace erthink {
 
-template <typename T> inline constexpr int clz(T v);
+template <typename T> cxx11_constexpr int clz(T v);
 
 static __maybe_unused inline int fallback_clz32(uint32_t v) {
   v |= v >> 1;
@@ -65,19 +69,19 @@ static __maybe_unused inline int fallback_clz64(uint64_t v) {
 #endif
 }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 
-template <> inline constexpr int clz<unsigned>(unsigned v) {
+template <> cxx11_constexpr int clz<unsigned>(unsigned v) {
   return __builtin_clz(v);
 }
-template <> inline constexpr int clz<unsigned long>(unsigned long v) {
+template <> cxx11_constexpr int clz<unsigned long>(unsigned long v) {
   return __builtin_clzl(v);
 }
-template <> inline constexpr int clz<unsigned long long>(unsigned long long v) {
+template <> cxx11_constexpr int clz<unsigned long long>(unsigned long long v) {
   return __builtin_clzll(v);
 }
 
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 
 #pragma intrinsic(_BitScanReverse)
 template <> inline int clz<uint32_t>(uint32_t v) {

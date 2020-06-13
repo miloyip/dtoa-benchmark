@@ -34,7 +34,7 @@
 #include <e2kbuiltin.h>
 #endif
 
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !defined(__clang__)
 
 #if _MSC_FULL_VER < 191526730
 #pragma message(                                                               \

@@ -17,6 +17,10 @@
 
 #pragma once
 
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#error "This source code requires C++11 at least."
+#endif
+
 #include "erthink_arch.h"
 #include "erthink_carryadd.h"
 #include "erthink_defs.h"
@@ -24,11 +28,15 @@
 
 /* TODO: refactoring defines to C++ functions and templateds */
 
+#ifdef __cplusplus
 namespace erthink {
+#endif
 
 #if defined(__e2k__) && __iset__ >= 3
 #define mul_64x64_high(a, b) __builtin_e2k_umulhd(a, b)
 #endif /* __e2k__ Elbrus && __iset__ >= 3 */
+
+#if !defined(__clang__)
 
 #if defined(_M_X64) || defined(_M_IA64) || defined(_M_AMD64)
 #pragma intrinsic(_umul128)
@@ -48,8 +56,10 @@ namespace erthink {
 #define mul_32x32_64(a, b) _arm_umull(a, b)
 #endif
 
+#endif /* !clang */
+
 #ifndef mul_32x32_64
-static constexpr __always_inline uint64_t mul_32x32_64(uint32_t a, uint32_t b) {
+static cxx11_constexpr uint64_t mul_32x32_64(uint32_t a, uint32_t b) {
   return a * (uint64_t)b;
 }
 #endif /* mul_32x32_64 */
@@ -82,4 +92,6 @@ static __maybe_unused __always_inline uint64_t mul_64x64_128(uint64_t a,
 }
 #endif /* mul_64x64_128() */
 
+#ifdef __cplusplus
 } // namespace erthink
+#endif

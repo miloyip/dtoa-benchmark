@@ -78,12 +78,15 @@ if (MSVC)
     add_compile_options("/Zc:__cplusplus")
   endif()
 endif()
+
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 HAS_CXX20)
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 HAS_CXX17)
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 HAS_CXX14)
-
 if(NOT DEFINED ERTHINK_CXX_STANDARD)
   if(DEFINED CMAKE_CXX_STANDARD)
     set(ERTHINK_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+  elseif(NOT HAS_CXX20 LESS 0)
+    set(ERTHINK_CXX_STANDARD 20)
   elseif(NOT HAS_CXX17 LESS 0)
     set(ERTHINK_CXX_STANDARD 17)
   elseif(NOT HAS_CXX14 LESS 0)
@@ -93,14 +96,60 @@ if(NOT DEFINED ERTHINK_CXX_STANDARD)
   endif()
 endif()
 message(STATUS "Use C++${ERTHINK_CXX_STANDARD} for Erthink")
+if(NOT SUBPROJECT OR NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
+endif()
 
-include(cmake/utils.cmake)
-include(cmake/compiler.cmake)
-include(cmake/profile.cmake)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/profile.cmake")
 
 if(NOT SUBPROJECT)
+  set(CMAKE_MACOSX_RPATH ON)
   option(CMAKE_POSITION_INDEPENDENT_CODE "Generate position independed (PIC)." ON)
   option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
+
+  if(CMAKE_CONFIGURATION_TYPES OR NOT CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "DEBUG")
+    set(INTERPROCEDURAL_OPTIMIZATION_DEFAULT ON)
+  else()
+    set(INTERPROCEDURAL_OPTIMIZATION_DEFAULT OFF)
+  endif()
+
+  if(CMAKE_INTERPROCEDURAL_OPTIMIZATION_AVAILABLE
+      OR GCC_LTO_AVAILABLE OR MSVC_LTO_AVAILABLE OR CLANG_LTO_AVAILABLE)
+    option(INTERPROCEDURAL_OPTIMIZATION "Enable interprocedural/LTO optimization." ${INTERPROCEDURAL_OPTIMIZATION_DEFAULT})
+  endif()
+
+  if(INTERPROCEDURAL_OPTIMIZATION)
+    if(GCC_LTO_AVAILABLE)
+      set(LTO_ENABLED TRUE)
+      set(CMAKE_AR ${CMAKE_GCC_AR} CACHE PATH "Path to ar program with LTO-plugin" FORCE)
+      set(CMAKE_NM ${CMAKE_GCC_NM} CACHE PATH "Path to nm program with LTO-plugin" FORCE)
+      set(CMAKE_RANLIB ${CMAKE_GCC_RANLIB} CACHE PATH "Path to ranlib program with LTO-plugin" FORCE)
+      message(STATUS "Erthink indulge Link-Time Optimization by GCC")
+    elseif(CLANG_LTO_AVAILABLE)
+      set(LTO_ENABLED TRUE)
+      if(CMAKE_CLANG_LD)
+        set(CMAKE_LINKER ${CMAKE_CLANG_LD} CACHE PATH "Path to lld or ld program with LTO-plugin" FORCE)
+      endif()
+      set(CMAKE_AR ${CMAKE_CLANG_AR} CACHE PATH "Path to ar program with LTO-plugin" FORCE)
+      set(CMAKE_NM ${CMAKE_CLANG_NM} CACHE PATH "Path to nm program with LTO-plugin" FORCE)
+      set(CMAKE_RANLIB ${CMAKE_CLANG_RANLIB} CACHE PATH "Path to ranlib program with LTO-plugin" FORCE)
+      message(STATUS "Erthink indulge Link-Time Optimization by CLANG")
+    elseif(MSVC_LTO_AVAILABLE)
+      set(LTO_ENABLED TRUE)
+      message(STATUS "Erthink indulge Link-Time Optimization by MSVC")
+    elseif(CMAKE_INTERPROCEDURAL_OPTIMIZATION_AVAILABLE)
+      message(STATUS "Erthink indulge Interprocedural Optimization by CMake")
+      set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+      set(LTO_ENABLED TRUE)
+    else()
+      message(WARNING "Unable to engage interprocedural/LTO optimization.")
+    endif()
+  else()
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+    set(LTO_ENABLED FALSE)
+  endif()
 
   find_program(VALGRIND valgrind)
   if(VALGRIND)
@@ -115,11 +164,6 @@ if(NOT SUBPROJECT)
       CACHE STRING "Valgrind options" FORCE)
     set(VALGRIND_COMMAND_OPTIONS "${MEMORYCHECK_COMMAND_OPTIONS}" CACHE STRING "Valgrind options" FORCE)
   endif()
-  include(cmake/testing.cmake)
-
-  if(NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
-  endif()
 
   # Enable 'make tags' target.
   find_program(CTAGS ctags)
@@ -129,18 +173,23 @@ if(NOT SUBPROJECT)
     add_custom_target(ctags DEPENDS tags)
   endif(CTAGS)
 
-  # Enable 'make reformat' target.
-  find_program(CLANG_FORMAT
-    NAMES clang-format-6.0 clang-format-5.0 clang-format-4.0
-    clang-format-3.9 clang-format-3.8 clang-format-3.7 clang-format)
-  if(CLANG_FORMAT AND UNIX)
-    add_custom_target(reformat
-      VERBATIM
-      COMMAND
-      git ls-files |
-      grep -E \\.\(c|cxx|cc|cpp|h|hxx|hpp\)\(\\.in\)?\$ |
-      xargs ${CLANG_FORMAT} -i --style=file
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  if(UNIX)
+    find_program(CLANG_FORMAT
+      NAMES clang-format-12 clang-format-11 clang-format-10 clang-format)
+    if(CLANG_FORMAT)
+      execute_process(COMMAND ${CLANG_FORMAT} "--version" OUTPUT_VARIABLE clang_format_version_info)
+      string(REGEX MATCH "version ([0-9]+)\\.([0-9]+)\\.([0-9]+)(.*)?" clang_format_version_info CLANG_FORMAT_VERSION)
+      if(clang_format_version_info AND NOT CLANG_FORMAT_VERSION VERSION_LESS 10.0)
+        # Enable 'make reformat' target.
+        add_custom_target(reformat
+          VERBATIM
+          COMMAND
+          git ls-files |
+          grep -E \\.\(c|cxx|cc|cpp|h|hxx|hpp\)\(\\.in\)?\$ |
+          xargs ${CLANG_FORMAT} -i --style=file
+          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+      endif()
+    endif()
   endif()
 
   find_program(GIT git)
@@ -157,6 +206,9 @@ if(NOT SUBPROJECT)
       COMMAND ${GIT} clean -f -X -d
       COMMENT "Removing all build files from the source directory")
   endif()
+
+  setup_compile_flags()
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/testing.cmake")
 endif(NOT SUBPROJECT)
 
 ################################################################################
@@ -167,10 +219,10 @@ add_library(erthink INTERFACE)
 
 set(erthink_HEADERS
   erthink_arch.h erthink_bswap.h erthink_byteorder.h erthink_carryadd.h
-  erthink_clz.h erthink_d2a.h erthink_defs.h erthink_dynamic_constexpr.h
-  erthink_intrin.h erthink_misc.h erthink_mul.h erthink_rot.h erthink_u2a.h
-  erthink_optimize4size.h erthink_optimize4speed.h erthink_short_alloc.h
-  erthink_ifunc.h erthink_endian.h erthink.h)
+  erthink_casting.h erthink_clz.h erthink_d2a.h erthink_defs.h
+  erthink_dynamic_constexpr.h erthink_intrin.h erthink_misc.h erthink_mul.h
+  erthink_rot.h erthink_u2a.h erthink_optimize4size.h erthink_optimize4speed.h
+  erthink_short_alloc.h erthink_ifunc.h erthink_endian.h erthink.h)
 
 target_compile_features(erthink INTERFACE "cxx_std_${ERTHINK_CXX_STANDARD}")
 

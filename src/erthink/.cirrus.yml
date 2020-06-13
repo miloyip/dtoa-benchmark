@@ -1,0 +1,17 @@
+freebsd_instance:
+  image_family: freebsd-12-1-snap
+
+task:
+  env:
+    GTEST_SHUFFLE: 1
+    GTEST_RUNTIME_LIMIT: 99
+  install_script: pkg install -y cmake git
+  script: |
+    git fetch --tags --prune
+    git submodule foreach --recursive git fetch --unshallow --tags --prune
+    cmake --version
+    cmake . &&  cmake --build . && (ctest || \
+       (echo "-------------------------------------------------------------------------------"; \
+       cat Testing/Temporary/*.log && \
+       echo "-------------------------------------------------------------------------------" ) \
+    )

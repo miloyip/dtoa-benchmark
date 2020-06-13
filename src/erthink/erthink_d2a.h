@@ -37,7 +37,12 @@
  *    but may slightly inferior in a whole on a 16-17 digit values.
  */
 
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#error "This source code requires C++11 at least."
+#endif
+
 #include "erthink_carryadd.h"
+#include "erthink_casting.h"
 #include "erthink_clz.h"
 #include "erthink_defs.h"
 #include "erthink_misc.h"
@@ -53,6 +58,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring> // for memcpy()
+#include <ostream>
 #if defined(HAVE_IEEE754_H) || __has_include(<ieee754.h>)
 #include <ieee754.h>
 #endif
@@ -116,11 +122,11 @@ static inline /* LY: 'inline' here is better for performance than 'constexpr' */
 
 namespace grisu {
 
-static constexpr uint64_t IEEE754_DOUBLE_EXPONENT_MASK =
+static cxx11_constexpr_var uint64_t IEEE754_DOUBLE_EXPONENT_MASK =
     UINT64_C(0x7FF0000000000000);
-static constexpr uint64_t IEEE754_DOUBLE_MANTISSA_MASK =
+static cxx11_constexpr_var uint64_t IEEE754_DOUBLE_MANTISSA_MASK =
     UINT64_C(0x000FFFFFFFFFFFFF);
-static constexpr int64_t IEEE754_DOUBLE_IMPLICIT_LEAD =
+static cxx11_constexpr_var int64_t IEEE754_DOUBLE_IMPLICIT_LEAD =
     INT64_C(0x0010000000000000);
 
 enum {
@@ -147,9 +153,9 @@ struct diy_fp {
     e = static_cast<int>(exp_bits >> IEEE754_DOUBLE_MANTISSA_SIZE) -
         (exp_bits ? GRISU_EXPONENT_BIAS : GRISU_EXPONENT_BIAS - 1);
   }
-  constexpr diy_fp(const diy_fp &rhs) noexcept = default;
-  constexpr diy_fp(uint64_t f, int e) noexcept : f(f), e(e) {}
-  constexpr diy_fp &operator=(const diy_fp &rhs) noexcept = default;
+  cxx11_constexpr diy_fp(const diy_fp &rhs) cxx11_noexcept = default;
+  cxx11_constexpr diy_fp(uint64_t f, int e) cxx11_noexcept : f(f), e(e) {}
+  cxx11_constexpr diy_fp &operator=(const diy_fp &rhs) cxx11_noexcept = default;
   diy_fp() = default;
 
   static diy_fp fixedpoint(uint64_t value, int exp2) {
@@ -157,7 +163,7 @@ struct diy_fp {
     assert(exp2 < 1032 && exp2 > -1127);
     const int gap = /* avoid underflow of (upper_bound - lower_bound) */ 3;
     const int shift = clz64(value) - gap;
-    constexpr uint64_t top = UINT64_MAX >> gap;
+    cxx11_constexpr_var uint64_t top = UINT64_MAX >> gap;
     const uint64_t rounding = UINT64_C(1) << (1 - shift);
     value = (shift >= 0)
                 ? value << shift
@@ -191,13 +197,13 @@ struct diy_fp {
 #endif
 
 static diy_fp cached_power(const int in_exp2, int &out_exp10) {
-  constexpr std::size_t n_items =
+  cxx11_constexpr_var std::size_t n_items =
       (340 + 340) / 8 + 1 /* 10^-340 .. 0 .. 10^340 */;
   assert(in_exp2 < 1096 && in_exp2 > -1191);
 
   /* LY: avoid branches and IEEE754-to-integer conversion,
    * which could leads to save/restore FPU's flags/mode. */
-  constexpr int64_t factor =
+  cxx11_constexpr_var int64_t factor =
       static_cast<int64_t>(IEEE754_DOUBLE_IMPLICIT_LEAD /
                            3.321928094887362347870319 /* log2(10.0) */);
   const int exp2_rebased = (-61 - in_exp2);
@@ -212,7 +218,7 @@ static diy_fp cached_power(const int in_exp2, int &out_exp10) {
   assert(n_items > index);
   out_exp10 = int(340 - (exp10_unbiased & ~7));
 
-  static constexpr short power10_exp2[] = {
+  static cxx11_constexpr_var short power10_exp2[] = {
       -1193, -1166, -1140, -1113, -1087, -1060, -1034, -1007, -980, -954, -927,
       -901,  -874,  -847,  -821,  -794,  -768,  -741,  -715,  -688, -661, -635,
       -608,  -582,  -555,  -529,  -502,  -475,  -449,  -422,  -396, -369, -343,
@@ -504,26 +510,11 @@ static inline char *convert(const bool accurate, diy_fp v, char *const buffer,
                        buffer, out_exp10, v.f, -v.e);
 }
 
-double inline cast(int64_t i64) {
-  static_assert(sizeof(double) == 8 && sizeof(int64_t), "WTF?");
-  double f64;
-  std::memcpy(&f64, &i64, 8);
-  return f64;
-}
+double inline cast(int64_t i64) { return bit_cast<double>(i64); }
 
-double inline cast(uint64_t u64) {
-  static_assert(sizeof(double) == 8 && sizeof(uint64_t), "WTF?");
-  double f64;
-  std::memcpy(&f64, &u64, 8);
-  return f64;
-}
+double inline cast(uint64_t u64) { return bit_cast<double>(u64); }
 
-int64_t inline cast(double f64) {
-  static_assert(sizeof(double) == 8 && sizeof(int64_t), "WTF?");
-  int64_t i64;
-  std::memcpy(&i64, &f64, 8);
-  return i64;
-}
+int64_t inline cast(double f64) { return bit_cast<int64_t>(f64); }
 
 } // namespace grisu
 
@@ -573,4 +564,28 @@ static inline __maybe_unused char *d2a_fast(
   return d2a<false>(value, buffer);
 }
 
+template <bool accurate = true> struct output_double {
+  const double value;
+  cxx11_constexpr output_double(const output_double &) = default;
+  cxx11_constexpr output_double(const double value) : value(value) {}
+};
+
 } // namespace erthink
+
+namespace std {
+
+inline ostream &operator<<(ostream &out,
+                           const erthink::output_double<false> &it) {
+  char buf[erthink::d2a_max_chars];
+  char *end = erthink::d2a_fast(it.value, buf);
+  return out.write(buf, end - buf);
+}
+
+inline ostream &operator<<(ostream &out,
+                           const erthink::output_double<true> &it) {
+  char buf[erthink::d2a_max_chars];
+  char *end = erthink::d2a_accurate(it.value, buf);
+  return out.write(buf, end - buf);
+}
+
+} // namespace std

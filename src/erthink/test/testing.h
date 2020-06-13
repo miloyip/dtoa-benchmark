@@ -19,7 +19,7 @@
 
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#if !defined(_CRT_SECURE_NO_WARNINGS)
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 #define _STL_WARNING_LEVEL 3

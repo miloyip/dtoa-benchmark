@@ -1,36 +1,96 @@
 language: cpp
 sudo: false
-dist: xenial
 
 env:
   global:
     - GTEST_SHUFFLE=1
-    - GTEST_RUNTIME_LIMIT=199
+    - GTEST_RUNTIME_LIMIT=99
 
 addons:
   apt:
-#    sources:
-#      - ubuntu-toolchain-r-test
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
       - cmake
       - libgtest-dev
+      - clang-format
+    update: true
 
-compiler:
-  - gcc
-  - clang
+matrix:
+  include:
+    - os: linux
+      dist: focal
+      compiler: gcc
+      env: CC=cc CXX=c++
+    - os: linux
+      dist: focal
+      compiler: clang
+      env: CC=clang CXX=clang++
+    - os: linux
+      dist: bionic
+      compiler: gcc
+      env: CC=cc CXX=c++
+    - os: linux
+      dist: bionic
+      compiler: clang
+      env: CC=clang CXX=clang++
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: CC=cc CXX=c++
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: CC=clang CXX=clang++
+    - os: osx
+      osx_image: xcode11.3
+      env: CC=cc CXX=c++
+    - os: osx
+      osx_image: xcode9.4
+      env: CC=cc CXX=c++
 
-os:
-  - linux
-  - osx
+before_script: |
+  if [ "${TRAVIS_BRANCH}" = "coverity_scan" ]; then
+    # call Coverity Scan manually of addons.coverity_scan for first job only
+    if [ "${TRAVIS_JOB_NUMBER}" = "${TRAVIS_BUILD_NUMBER}.1" ]; then
+      export COVERITY_SCAN_BRANCH=1
+      echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+      curl -s 'https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh' -o coverity_scan.sh
+    else
+      echo 'echo "Skip CoverityScan for unrelated os/compiler"' > coverity_scan.sh
+    fi
+  fi
 
-script: >
-  cmake --version &&
-  cmake . &&
-  (if which clang-format-6.0 > /dev/null && make reformat && [[ -n $(git diff) ]];
-    then
-      echo "You must run 'make reformat' before submitting a pull request";
-      echo "";
-      git diff;
-      exit -1;
-    fi) &&
-  make --keep-going all && make --keep-going test;
+script: |
+  git fetch --unshallow --tags --prune
+  git submodule foreach --recursive git fetch --unshallow --tags --prune
+  cmake --version
+  if [ ! -s ./coverity_scan.sh ]; then
+    cmake . && \
+    make --keep-going all && \
+    (MALLOC_CHECK_=7 MALLOC_PERTURB_=42 make --keep-going test || \
+       (echo "-------------------------------------------------------------------------------"; \
+       cat Testing/Temporary/*.log && \
+       echo "-------------------------------------------------------------------------------" ) \
+    )
+  else
+    COVERITY_SCAN_PROJECT_NAME="erthink/erthink" \
+    COVERITY_SCAN_NOTIFICATION_EMAIL="leo@yuriev.ru" \
+    COVERITY_SCAN_BUILD_COMMAND_PREPEND="cmake -DCMAKE_BUILD_TYPE=Debug ." \
+    COVERITY_SCAN_BUILD_COMMAND="make" \
+    COVERITY_SCAN_BRANCH_PATTERN="$TRAVIS_BRANCH" \
+      bash ./coverity_scan.sh || cat cov-int/scm_log.txt
+  fi
+
+after_script: |
+  if [ "${TRAVIS_BRANCH}" != "coverity_scan" -a "${TRAVIS_JOB_NUMBER}" = "${TRAVIS_BUILD_NUMBER}.1" ] && make reformat && [[ -n $(git diff) ]]; then
+    echo "You must run 'make reformat' before submitting a pull request"
+    echo "-------------------------------------------------------------------------------"
+    git diff
+    sleep 1
+    echo "-------------------------------------------------------------------------------"
+    sleep 1
+    exit -1
+  fi
+  echo "-------------------------------------------------------------------------------"
+  sleep 1

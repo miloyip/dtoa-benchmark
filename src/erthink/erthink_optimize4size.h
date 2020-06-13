@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #pragma optimize("gs", on)
 #endif
 
