@@ -1,5 +1,5 @@
 #include "test.h"
 
-void dtoa_null(double, char *) {}
+char *dtoa_null(double, char *const buffer) { return buffer; }
 
 REGISTER_TEST(null);

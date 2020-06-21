@@ -34,31 +34,30 @@ private:
   uint64_t mSeed;
 };
 
-static size_t VerifyValue(double value, void (*f)(double, char *)) {
+static size_t VerifyValue(double value, char *(*f)(double, char *)) {
   char buffer[1024];
-  f(value, buffer);
+  char *str = f(value, buffer);
 
   // double-conversion returns correct result.
 #if 0
   char *end = nullptr;
-  const double roundtrip =strtod(buffer, &end);
-  const size_t processed = end ? end - buffer : strnlen(buffer, sizeof(buffer));
+  const double roundtrip = strtod(str, &end);
+  const size_t processed = end ? end - str : strnlen(str, sizeof(str));
 #else
   using namespace double_conversion;
   StringToDoubleConverter converter(
       StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
   int processed = 0;
-  double roundtrip = converter.StringToDouble(buffer, 1024, &processed);
+  double roundtrip = converter.StringToDouble(str, 1024, &processed);
 #endif
 
-  size_t len = strlen(buffer);
+  size_t len = strlen(str);
   if (len != (size_t)processed) {
-    printf("Warning: some extra character %g -> '%s'\n", value, buffer);
+    printf("Warning: some extra character %g -> '%s'\n", value, str);
     throw std::exception();
   }
   if (value != roundtrip) {
-    printf(": roundtrip fail %.17g -> '%s' -> %.17g\n", value, buffer,
-           roundtrip);
+    printf(": roundtrip fail %.17g -> '%s' -> %.17g\n", value, str, roundtrip);
     throw std::exception();
   }
 

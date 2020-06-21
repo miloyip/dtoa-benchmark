@@ -4,8 +4,9 @@ extern "C" {
 #include "fpconv/fpconv.h"
 }
 
-void dtoa_fpconv(double value, char *buffer) {
+char *dtoa_fpconv(double value, char *const buffer) {
   buffer[fpconv_dtoa(value, buffer)] = '\0';
+  return buffer;
 }
 
 REGISTER_TEST(fpconv);

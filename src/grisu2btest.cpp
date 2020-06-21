@@ -4,16 +4,18 @@ extern "C" {
 bool fill_double(double v, char *buffer);
 }
 
-void dtoa_grisu2(double value, char *buffer) {
+char *dtoa_grisu2(double value, char *const buffer) {
   if (value == 0)
     strcpy(buffer, "0.0");
   else {
+    char *str = buffer;
     if (value < 0) {
-      *buffer++ = '-';
+      *str++ = '-';
       value = -value;
     }
-    fill_double(value, buffer);
+    fill_double(value, str);
   }
+  return buffer;
 }
 
 REGISTER_TEST(grisu2);

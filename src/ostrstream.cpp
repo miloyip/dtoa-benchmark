@@ -2,10 +2,10 @@
 #include <iomanip>
 #include <strstream>
 
-void dtoa_ostrstream(double value, char *buffer) {
+char *dtoa_ostrstream(double value, char *const buffer) {
   std::ostrstream oss(buffer, 25);
   oss << std::setprecision(17) << value << std::ends;
-  strcpy(buffer, oss.str());
+  return strcpy(buffer, oss.str());
 }
 
 //#if RUN_CPPITOA

@@ -2,8 +2,9 @@
 #include "stb/stb_sprintf.h"
 #include "test.h"
 
-void dtoa_stb(double value, char *buffer) {
+char *dtoa_stb(double value, char *const buffer) {
   stbsp_sprintf(buffer, "%.17g", value);
+  return buffer;
 }
 
 REGISTER_TEST(stb);

@@ -461,7 +461,7 @@ static inline void Prettify(char *buffer, int length, int k) {
   }
 }
 
-void emyg_dtoa(double value, char *buffer) {
+char *emyg_dtoa(double value, char *const buffer) {
   // Not handling NaN and inf
   assert(!isnan(value));
   assert(!isinf(value));
@@ -472,12 +472,14 @@ void emyg_dtoa(double value, char *buffer) {
     buffer[2] = '0';
     buffer[3] = '\0';
   } else {
+    char *str = buffer;
     if (value < 0) {
-      *buffer++ = '-';
+      *str++ = '-';
       value = -value;
     }
     int length, K;
-    Grisu2(value, buffer, &length, &K);
-    Prettify(buffer, length, K);
+    Grisu2(value, str, &length, &K);
+    Prettify(str, length, K);
   }
+  return buffer;
 }

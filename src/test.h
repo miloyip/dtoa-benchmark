@@ -26,8 +26,8 @@ private:
 };
 
 struct Case {
-  Case(const char *fname, void (*dtoa)(double, char *), bool baseline = false,
-       bool fake = false)
+  Case(const char *fname, char *(*dtoa)(double, char *const),
+       bool baseline = false, bool fake = false)
       : fname(fname), dtoa(dtoa), baseline(baseline), fake(fake) {
     TestManager::Instance().AddTest(this);
   }
@@ -37,7 +37,7 @@ struct Case {
   }
 
   const char *fname;
-  void (*dtoa)(double, char *);
+  char *(*dtoa)(double, char *const);
   const bool baseline, fake;
 
   double min, max, sum, rms;
@@ -54,9 +54,12 @@ struct Case {
     min = std::min(min, duration);
     max = std::max(max, duration);
     sum += duration;
-    rms = std::sqrt((rms * rms * count + duration * duration) / (count += 1));
+    count += 1;
+    rms = std::sqrt((rms * rms * (count - 1) + duration * duration) / count);
   }
 };
 
+#ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#endif /* STRINGIFY */
 #define REGISTER_TEST(f) static Case gRegister##f(STRINGIFY(f), dtoa##_##f)

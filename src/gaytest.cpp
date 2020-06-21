@@ -4,7 +4,10 @@ extern "C" {
 char *g_fmt(char *, double);
 }
 
-void dtoa_gay(double value, char *buffer) { g_fmt(buffer, value); }
+char *dtoa_gay(double value, char *const buffer) {
+  g_fmt(buffer, value);
+  return buffer;
+}
 
 #if 0 /* Disabled because of invalid result and/or SIGSEGV */
 REGISTER_TEST(gay);
