@@ -59,6 +59,7 @@
 #include <cstddef>
 #include <cstring> // for memcpy()
 #include <ostream>
+#include <utility> // for std::pair
 #if defined(HAVE_IEEE754_H) || __has_include(<ieee754.h>)
 #include <ieee754.h>
 #endif
@@ -122,6 +123,12 @@ static inline /* LY: 'inline' here is better for performance than 'constexpr' */
 
 namespace grisu {
 
+double inline cast(int64_t i64) { return bit_cast<double>(i64); }
+
+double inline cast(uint64_t u64) { return bit_cast<double>(u64); }
+
+int64_t inline cast(double f64) { return bit_cast<int64_t>(f64); }
+
 static cxx11_constexpr_var uint64_t IEEE754_DOUBLE_EXPONENT_MASK =
     UINT64_C(0x7FF0000000000000);
 static cxx11_constexpr_var uint64_t IEEE754_DOUBLE_MANTISSA_MASK =
@@ -130,8 +137,8 @@ static cxx11_constexpr_var int64_t IEEE754_DOUBLE_IMPLICIT_LEAD =
     INT64_C(0x0010000000000000);
 
 enum {
-#ifndef IEEE754_DOUBLE_BIAS
-  IEEE754_DOUBLE_BIAS = 0x3ff /* Added to exponent. */,
+#ifndef IEEE754_DOUBLE_BIAS /* maybe defined in the ieee754.h */
+  IEEE754_DOUBLE_BIAS = 0x3ff,
 #endif
   IEEE754_DOUBLE_MANTISSA_SIZE = 52,
   GRISU_EXPONENT_BIAS = IEEE754_DOUBLE_BIAS + IEEE754_DOUBLE_MANTISSA_SIZE
@@ -146,30 +153,37 @@ struct diy_fp {
   uint64_t f;
   int e;
 
-  explicit diy_fp(const int64_t i64) {
+  explicit diy_fp(const int64_t i64) cxx11_noexcept {
     const uint64_t exp_bits = (i64 & IEEE754_DOUBLE_EXPONENT_MASK);
     const uint64_t mantissa = (i64 & IEEE754_DOUBLE_MANTISSA_MASK);
-    f = mantissa + (exp_bits ? IEEE754_DOUBLE_IMPLICIT_LEAD : 0u);
+    f = mantissa + (exp_bits ? /* normalized */ IEEE754_DOUBLE_IMPLICIT_LEAD
+                             : /* de-normalized */ 0u);
     e = static_cast<int>(exp_bits >> IEEE754_DOUBLE_MANTISSA_SIZE) -
-        (exp_bits ? GRISU_EXPONENT_BIAS : GRISU_EXPONENT_BIAS - 1);
+        (exp_bits ? /* normalized */ GRISU_EXPONENT_BIAS
+                  : /* de-normalized */ GRISU_EXPONENT_BIAS - 1);
   }
+
   cxx11_constexpr diy_fp(const diy_fp &rhs) cxx11_noexcept = default;
   cxx11_constexpr diy_fp(uint64_t f, int e) cxx11_noexcept : f(f), e(e) {}
   cxx11_constexpr diy_fp &operator=(const diy_fp &rhs) cxx11_noexcept = default;
   diy_fp() = default;
 
   static diy_fp fixedpoint(uint64_t value, int exp2) {
-    assert(value > 0);
     assert(exp2 < 1032 && exp2 > -1127);
-    const int gap = /* avoid underflow of (upper_bound - lower_bound) */ 3;
-    const int shift = clz64(value) - gap;
-    cxx11_constexpr_var uint64_t top = UINT64_MAX >> gap;
-    const uint64_t rounding = UINT64_C(1) << (1 - shift);
-    value = (shift >= 0)
-                ? value << shift
-                : ((value < top - rounding) ? value + rounding : top) >> -shift;
-    assert(top >= value && value > 0);
-    return diy_fp(value, exp2 - shift);
+    if (unlikely(value == 0))
+      return diy_fp(0);
+    else {
+      const int gap = /* avoid underflow of (upper_bound - lower_bound) */ 3;
+      const int shift = clz64(value) - gap;
+      cxx11_constexpr_var uint64_t top = UINT64_MAX >> gap;
+      const uint64_t rounding = UINT64_C(1) << (1 - shift);
+      value =
+          (shift >= 0)
+              ? value << shift
+              : ((value < top - rounding) ? value + rounding : top) >> -shift;
+      assert(top >= value && value > 0);
+      return diy_fp(value, exp2 - shift);
+    }
   }
 
   static diy_fp middle(const diy_fp &upper, const diy_fp &lower) {
@@ -196,7 +210,7 @@ struct diy_fp {
 #pragma warning(pop)
 #endif
 
-static diy_fp cached_power(const int in_exp2, int &out_exp10) {
+static diy_fp cached_power(const int in_exp2, int &out_exp10) cxx11_noexcept {
   cxx11_constexpr_var std::size_t n_items =
       (340 + 340) / 8 + 1 /* 10^-340 .. 0 .. 10^340 */;
   assert(in_exp2 < 1096 && in_exp2 > -1191);
@@ -278,29 +292,29 @@ static diy_fp cached_power(const int in_exp2, int &out_exp10) {
   return diy_fp(power10_mas[index], power10_exp2[index]);
 }
 
-static __always_inline void round(char *&end, uint64_t delta, uint64_t rest,
-                                  uint64_t ten_kappa, uint64_t upper,
-                                  int &inout_exp10) {
-  while (delta >= ten_kappa + rest &&
-         (rest + ten_kappa < upper ||
-          (rest < upper &&
-           /* closer */ upper - rest >= rest + ten_kappa - upper))) {
-    end[-1] -= 1;
-    if (unlikely(end[-1] < '1')) {
-      inout_exp10 += 1;
-      end -= 1;
-      return;
+template <typename PRINTER>
+inline void adjust(PRINTER &printer, uint64_t delta, uint64_t rest,
+                   uint64_t ten_kappa, uint64_t upper,
+                   int &inout_exp10) cxx11_noexcept {
+  if (printer.is_accurate()) {
+    while (delta >= ten_kappa + rest &&
+           (rest + ten_kappa < upper ||
+            (rest < upper &&
+             /* closer */ upper - rest >= rest + ten_kappa - upper))) {
+      if (!printer.adjust_last_digit(-1)) {
+        ++inout_exp10;
+        break;
+      }
+      rest += ten_kappa;
     }
-    rest += ten_kappa;
   }
 }
 
-static inline char *make_digits(const bool accurate, const uint64_t top,
-                                uint64_t delta, char *const buffer,
-                                int &inout_exp10, const uint64_t value,
-                                unsigned shift) {
+template <typename PRINTER>
+inline void make_digits(PRINTER &printer, const uint64_t top, uint64_t delta,
+                        int &inout_exp10, const uint64_t value,
+                        unsigned shift) {
   uint64_t mask = UINT64_MAX >> (64 - shift);
-  char *ptr = buffer;
   const uint64_t gap = top - value;
 
   assert((top >> shift) <= UINT_E9);
@@ -354,14 +368,12 @@ static inline char *make_digits(const bool accurate, const uint64_t top,
       digit = body;
       if (unlikely(tail < delta)) {
       early_last:
-        *ptr++ = static_cast<char>(digit + '0');
+        printer.mantissa_digit(static_cast<char>(digit) + '0');
       early_skip:
         inout_exp10 += kappa;
         assert(kappa >= 0);
-        if (accurate)
-          round(ptr, delta, tail, dec_power(unsigned(kappa)) << shift, gap,
-                inout_exp10);
-        return ptr;
+        return adjust(printer, delta, tail, dec_power(unsigned(kappa)) << shift,
+                      gap, inout_exp10);
       }
 
       while (true) {
@@ -384,7 +396,8 @@ static inline char *make_digits(const bool accurate, const uint64_t top,
   } while (unlikely(digit == 0));
 
   while (true) {
-    *ptr++ = static_cast<char>(digit + '0');
+    if (unlikely(!printer.mantissa_digit(static_cast<char>(digit) + '0')))
+      goto early_skip;
     switch (--kappa) {
     default:
       assert(false);
@@ -440,8 +453,8 @@ static inline char *make_digits(const bool accurate, const uint64_t top,
   }
 
 done:
-  *ptr++ = static_cast<char>(digit + '0');
-  while (likely(tail > delta)) {
+  while (likely(printer.mantissa_digit(static_cast<char>(digit) + '0') &&
+                tail > delta)) {
     --kappa;
 #if ERTHINK_D2A_AVOID_MUL
     tail += tail << 2;   // *= 5
@@ -454,71 +467,221 @@ done:
     digit = static_cast<uint_fast32_t>(tail >> shift);
     tail &= mask;
 #endif /* ERTHINK_D2A_AVOID_MUL */
-    *ptr++ = static_cast<char>(digit + '0');
   }
 
   inout_exp10 += kappa;
   assert(kappa >= -19 && kappa <= 0);
-  if (accurate) {
-    const uint64_t unit = dec_power(unsigned(-kappa));
-    round(ptr, delta, tail, mask + 1, gap * unit, inout_exp10);
-  }
-  return ptr;
+  return adjust(printer, delta, tail, mask + 1,
+                gap * dec_power(unsigned(-kappa)), inout_exp10);
 }
 
-static inline char *convert(const bool accurate, diy_fp v, char *const buffer,
-                            int &out_exp10) {
-  if (unlikely(v.f == 0)) {
-    out_exp10 = 0;
-    *buffer = '0';
-    return buffer + 1;
-  }
+template <typename PRINTER>
+inline void convert(PRINTER &printer, const double &value) cxx11_noexcept {
+  const int64_t i64 = grisu::cast(value);
+  printer.sign(i64 < 0);
+  diy_fp diy(i64);
 
-  const int lead_zeros = clz64(v.f);
+  if (unlikely(diy.e == 0x7ff - grisu::GRISU_EXPONENT_BIAS))
+    return (diy.f - grisu::IEEE754_DOUBLE_IMPLICIT_LEAD) ? printer.nan()
+                                                         : printer.inf();
+  if (unlikely(diy.f == 0))
+    return printer.zero();
+
+  const int lead_zeros = clz64(diy.f);
   /* Check to output as ordinal.
    * Given the remaining optimizations, on average it does not have a positive
    * effect (although a little faster in a simplest cases).
    * However, it reduces the number of inaccuracies and non-shortest strings. */
-  if (!accurate && unlikely(v.e >= -52 && v.e <= lead_zeros) &&
-      (v.e >= 0 || (v.f << (64 + v.e)) == 0)) {
-    uint64_t ordinal = (v.e < 0) ? v.f >> -v.e : v.f << v.e;
-    assert(v.f == ((v.e < 0) ? ordinal << -v.e : ordinal >> v.e));
-    out_exp10 = 0;
-    return u2a(ordinal, buffer);
+  if (!printer.is_accurate() && unlikely(diy.e >= -52 && diy.e <= lead_zeros) &&
+      (diy.e >= 0 || (diy.f << (64 + diy.e)) == 0)) {
+    uint64_t ordinal = (diy.e < 0) ? diy.f >> -diy.e : diy.f << diy.e;
+    assert(diy.f == ((diy.e < 0) ? ordinal << -diy.e : ordinal >> diy.e));
+    if (printer.integer(ordinal))
+      return;
   }
 
-  // LY: normalize
-  assert(v.f <= UINT64_MAX / 2 && lead_zeros > 1);
-  v.e -= lead_zeros;
-  v.f <<= lead_zeros;
-  const diy_fp dec_factor = cached_power(v.e, out_exp10);
+  // normalize
+  assert(diy.f <= UINT64_MAX / 2 && lead_zeros > 1);
+  diy.e -= lead_zeros;
+  diy.f <<= lead_zeros;
+  int exp10;
+  const diy_fp dec_factor = grisu::cached_power(diy.e, exp10);
 
-  // LY: get boundaries
-  const int mojo = v.f > UINT64_C(0x80000000000007ff) ? 64 : 65;
+  // get boundaries
+  const int mojo = diy.f > UINT64_C(0x80000000000007ff) ? 64 : 65;
   const uint64_t delta = dec_factor.f >> (mojo - lead_zeros);
   assert(delta >= 2);
-  const uint_fast32_t lsb = v.scale(dec_factor);
-  if (accurate)
+  const uint_fast32_t lsb = diy.scale(dec_factor);
+  if (printer.is_accurate())
     // -1 -2 1 0 1: non-shortest 9522 for 25M probes, ratio 0.038088%
     //              shortest errors: +5727 -9156
     //              non-shortest errors: +3 -5
-    return make_digits(accurate, v.f + ((delta + lsb - 1) >> 1), delta - 2,
-                       buffer, out_exp10, v.f + lsb, -v.e);
+    make_digits(printer, diy.f + ((delta + lsb - 1) >> 1), delta - 2, exp10,
+                diy.f + lsb, -diy.e);
   else
     // -1 -2 1 0 0: non-shortest 9522 for 25M probes, ratio 0.038088%
-    return make_digits(accurate, v.f + ((delta + lsb - 1) >> 1), delta - 2,
-                       buffer, out_exp10, v.f, -v.e);
+    make_digits(printer, diy.f + ((delta + lsb - 1) >> 1), delta - 2, exp10,
+                diy.f, -diy.e);
+  printer.exponenta(exp10);
 }
 
-double inline cast(int64_t i64) { return bit_cast<double>(i64); }
+template <bool accurate> struct ieee754_default_printer {
+  enum { max_chars = 23 };
+  char *end;
+  char *begin;
 
-double inline cast(uint64_t u64) { return bit_cast<double>(u64); }
+  ieee754_default_printer(char *buffer_begin, char *buffer_end) cxx11_noexcept
+      : end(buffer_begin),
+        begin(buffer_begin) {
+    assert(buffer_end - buffer_begin >= max_chars);
+#ifndef NDEBUG
+    std::memset(buffer_begin, '_', buffer_end - buffer_begin);
+#else
+    (void)buffer_end;
+#endif
+  }
 
-int64_t inline cast(double f64) { return bit_cast<int64_t>(f64); }
+  void sign(bool negative) cxx11_noexcept {
+    // strive for branchless
+    *end = '-';
+    end += negative;
+  }
+
+  void nan() cxx11_noexcept {
+    // assumes compiler optimize-out memcpy() with small fixed length
+    std::memcpy(end, "nan", 4);
+    end += 3;
+  }
+
+  void inf() cxx11_noexcept {
+    // assumes compiler optimize-out memcpy() with small fixed length
+    std::memcpy(end, "inf", 4);
+    end += 3;
+  }
+
+  bool is_accurate() const cxx11_noexcept { return accurate; }
+
+  void zero() cxx11_noexcept { *end++ = '0'; }
+
+  bool integer(uint64_t value) cxx11_noexcept {
+    end = u2a(value, end);
+    return true;
+  }
+
+  bool mantissa_digit(char digit) cxx11_noexcept {
+    *end++ = digit;
+    return true;
+  }
+
+  bool adjust_last_digit(int8_t diff) cxx11_noexcept {
+    assert(diff == -1);
+    end[-1] += diff;
+    if (unlikely(end[-1] < '1')) {
+      --end;
+      return false;
+    }
+    return true;
+  }
+
+  void exponenta(int value) cxx11_noexcept {
+    if (value) {
+      const branchless_abs<int> pair(value);
+      end[0] = 'e';
+      // strive for branchless
+      end[1] = '+' + (('-' - '+') & pair.expanded_sign);
+      end = dec3(pair.unsigned_abs, end + 2);
+    }
+  }
+
+  std::pair<char *, char *> finalize_and_get() cxx11_noexcept {
+    assert(end > begin && begin + max_chars >= end);
+    return std::make_pair(begin, end);
+  }
+};
+
+// roundtrip-convertible with auto choose between decimal and exponential form
+template <bool accurate = false, int min_exp4dec = -4, int max_exp4dec = 10,
+          bool force_sign = false>
+struct shodan_printer : public ieee754_default_printer<accurate> {
+  using inherited = ieee754_default_printer<accurate>;
+
+  static constexpr int gap = sizeof(uint64_t) * 2;
+  static constexpr size_t buffer_size = inherited::max_chars + gap * 2;
+
+  shodan_printer(char *buffer_begin, char *buffer_end) cxx11_noexcept
+      : inherited(buffer_begin + gap, buffer_end - gap) {
+    static_assert(-min_exp4dec < gap, "Oops, min_exp4dec is too less");
+    static_assert(max_exp4dec < gap, "Oops, max_exp4dec is too large");
+  }
+
+  bool is_negative = false;
+  void sign(bool negative) cxx11_noexcept { is_negative = negative; }
+
+  void zero() cxx11_noexcept {
+    // assumes compiler optimize-out memcpy() with small fixed length
+    std::memcpy(inherited::end, "0.0", 4);
+    inherited::end += 3;
+  }
+
+  bool integer(uint64_t value) cxx11_noexcept {
+    (void)value;
+    return false;
+  }
+
+  std::pair<char *, char *> finalize_and_get() cxx11_noexcept {
+    inherited::begin[-1] = is_negative ? '-' : '+';
+    inherited::begin -= (is_negative || force_sign);
+    return std::make_pair(inherited::begin, inherited::end);
+  }
+
+  void exponenta(int exp) cxx11_noexcept {
+    static constexpr char zeros_with_dot[] = {
+        '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '.', '0', 0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0};
+    static_assert(gap * 2 == erthink::array_length(zeros_with_dot), "WTF?");
+    const ptrdiff_t ndigits = inherited::end - inherited::begin;
+    const int canon_exp = int(ndigits) + exp - 1;
+
+    if (canon_exp >= min_exp4dec && canon_exp <= max_exp4dec) {
+      // decimal
+      if (exp < 0) {
+        if (canon_exp >= 0) {
+          // wanna "1.23", have "123", insert dot
+          char *ptr = inherited::begin + ndigits + exp;
+          // assumes compiler optimize-out memmove() with small fixed length
+          std::memmove(ptr + 1, ptr, gap);
+          ptr[0] = '.';
+          inherited::end += 1;
+        } else {
+          // wanna "0.000123", have "123", write ahead "0.000"
+          // assumes compiler optimize-out memcpy() with small fixed length
+          std::memcpy(inherited::begin - gap, zeros_with_dot, gap);
+          inherited::begin += canon_exp - 1;
+          inherited::begin[1] = '.';
+        }
+      } else {
+        // wanna "123000.0", have "123", should append "000.0"
+        // assumes compiler optimize-out memcpy() with small fixed length
+        std::memcpy(inherited::end, zeros_with_dot + gap - exp, gap);
+        inherited::end += exp + 2;
+      }
+    } else {
+      // exponential: wanna "1.23+e456", have "123"
+      inherited::begin -= 1;
+      inherited::begin[0] = inherited::begin[1];
+      inherited::begin[1] = '.';
+      // strive branchless
+      inherited::end[0] = '0';
+      inherited::end += (inherited::end == inherited::begin);
+      inherited::exponenta(canon_exp);
+    }
+  }
+};
 
 } // namespace grisu
 
-enum { d2a_max_chars = 23 };
+enum { d2a_max_chars = grisu::ieee754_default_printer<false>::max_chars };
 
 template <bool accurate>
 /* The "accurate" controls the trade-off between conversion speed and accuracy:
@@ -534,22 +697,10 @@ char *
 d2a(const double &value,
     char *const
         buffer /* upto erthink::d2a_max_chars for -22250738585072014e-324 */) {
-  assert(!std::isnan(value) && !std::isinf(value));
-  const int64_t i64 = grisu::cast(value);
-  // LY: strive for branchless (SSA-optimizer must solve this)
-  *buffer = '-';
-  int exponent;
-  char *ptr = grisu::convert(accurate, grisu::diy_fp(i64), buffer + (i64 < 0),
-                             exponent);
-  if (exponent != 0) {
-    const branchless_abs<int> pair(exponent);
-    ptr[0] = 'e';
-    // LY: strive for branchless
-    ptr[1] = '+' + (('-' - '+') & pair.expanded_sign);
-    ptr = dec3(pair.unsigned_abs, ptr + 2);
-  }
-  assert(ptr - buffer <= d2a_max_chars);
-  return ptr;
+  grisu::ieee754_default_printer<accurate> printer(
+      buffer, buffer + grisu::ieee754_default_printer<accurate>::max_chars);
+  grisu::convert(printer, value);
+  return printer.finalize_and_get().second;
 }
 
 static inline __maybe_unused char *d2a_accurate(
@@ -576,14 +727,14 @@ namespace std {
 
 inline ostream &operator<<(ostream &out,
                            const erthink::output_double<false> &it) {
-  char buf[erthink::d2a_max_chars];
+  char buf[erthink::grisu::ieee754_default_printer<false>::max_chars];
   char *end = erthink::d2a_fast(it.value, buf);
   return out.write(buf, end - buf);
 }
 
 inline ostream &operator<<(ostream &out,
                            const erthink::output_double<true> &it) {
-  char buf[erthink::d2a_max_chars];
+  char buf[erthink::grisu::ieee754_default_printer<true>::max_chars];
   char *end = erthink::d2a_accurate(it.value, buf);
   return out.write(buf, end - buf);
 }

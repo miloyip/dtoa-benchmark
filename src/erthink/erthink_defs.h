@@ -331,7 +331,7 @@
 #elif defined(_MSC_VER) && !defined(__clang__)
 #define __always_inline __forceinline
 #else
-#define __always_inline
+#define __always_inline __inline
 #endif
 #endif /* __always_inline */
 

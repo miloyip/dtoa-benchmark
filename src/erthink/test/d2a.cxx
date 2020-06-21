@@ -249,6 +249,26 @@ TYPED_TEST_P(d2a, trivia) {
   EXPECT_EQ(1, end - buffer);
   EXPECT_EQ(buffer[0], '0');
 
+  end = TestFixture::convert(std::nan(""), buffer);
+  EXPECT_EQ(3, end - buffer);
+  *end++ = '\0';
+  EXPECT_STREQ("nan", buffer);
+
+  end = TestFixture::convert(-std::nan(""), buffer);
+  EXPECT_EQ(4, end - buffer);
+  *end++ = '\0';
+  EXPECT_STREQ("-nan", buffer);
+
+  end = TestFixture::convert(std::numeric_limits<double>::infinity(), buffer);
+  EXPECT_EQ(3, end - buffer);
+  *end++ = '\0';
+  EXPECT_STREQ("inf", buffer);
+
+  end = TestFixture::convert(-std::numeric_limits<double>::infinity(), buffer);
+  EXPECT_EQ(4, end - buffer);
+  *end++ = '\0';
+  EXPECT_STREQ("-inf", buffer);
+
   TestFixture::probe_d2a(buffer, 0.0);
   TestFixture::probe_d2a(buffer, 1.0);
   TestFixture::probe_d2a(buffer, 2.0);
@@ -355,6 +375,180 @@ REGISTER_TYPED_TEST_SUITE_P(d2a, trivia, stairwell, random3e7);
 INSTANTIATE_TYPED_TEST_SUITE_P(accurate, d2a, std::true_type);
 INSTANTIATE_TYPED_TEST_SUITE_P(fast, d2a, std::false_type);
 #endif
+
+//------------------------------------------------------------------------------
+
+static void check_shodan(double value, const char *expect) {
+  char buffer[erthink::grisu::shodan_printer<>::buffer_size];
+  erthink::grisu::shodan_printer<true> printer(buffer,
+                                               erthink::array_end(buffer));
+  erthink::grisu::convert(printer, value);
+  const auto pair = printer.finalize_and_get();
+  std::string str(pair.first, pair.second - pair.first);
+  EXPECT_STREQ(str.c_str(), expect);
+
+  char *strtod_end = nullptr;
+  double probe = strtod(str.c_str(), &strtod_end);
+  EXPECT_EQ('\0', *strtod_end);
+  EXPECT_EQ(value, probe);
+}
+
+static void check_shodan(double value) {
+  char buffer[erthink::grisu::shodan_printer<>::buffer_size];
+  erthink::grisu::shodan_printer<true> printer(buffer,
+                                               erthink::array_end(buffer));
+  erthink::grisu::convert(printer, value);
+  const auto pair = printer.finalize_and_get();
+  *pair.second = '\0';
+
+  char *strtod_end = nullptr;
+  double probe = strtod(pair.first, &strtod_end);
+  EXPECT_EQ('\0', *strtod_end);
+  EXPECT_EQ(value, probe);
+}
+
+static bool check_shodan_x64(uint64_t u64) {
+  const double f64 = erthink::grisu::cast(u64);
+  switch (std::fpclassify(f64)) {
+  case FP_NAN:
+  case FP_INFINITE:
+    return false;
+  default:
+    check_shodan(f64);
+  }
+
+  const float f32 = static_cast<float>(f64);
+  switch (std::fpclassify(f32)) {
+  case FP_NAN:
+  case FP_INFINITE:
+    return false;
+  default:
+    check_shodan(f32);
+    return true;
+  }
+}
+
+TEST(d2a, shodan_printer) {
+  check_shodan(0, "0.0");
+  check_shodan(1, "1.0");
+  check_shodan(-42, "-42.0");
+
+  check_shodan(INT32_MIN);
+  check_shodan(INT32_MAX);
+  check_shodan(UINT16_MAX);
+  check_shodan(UINT32_MAX);
+  check_shodan(double(INT64_MIN));
+  check_shodan(double(INT64_MAX));
+  check_shodan(double(UINT64_MAX));
+  check_shodan(FLT_MAX);
+  check_shodan(-FLT_MAX);
+  check_shodan(FLT_MAX);
+  check_shodan(-FLT_MAX);
+  check_shodan(FLT_MIN);
+  check_shodan(-FLT_MIN);
+  check_shodan(FLT_MAX * M_PI);
+  check_shodan(-FLT_MAX * M_PI);
+  check_shodan(FLT_MIN * M_PI);
+  check_shodan(-FLT_MIN * M_PI);
+
+  check_shodan(DBL_MAX);
+  check_shodan(-DBL_MAX);
+  check_shodan(DBL_MIN);
+  check_shodan(-DBL_MIN);
+  check_shodan(DBL_MAX / M_PI);
+  check_shodan(-DBL_MAX / M_PI);
+  check_shodan(DBL_MIN * M_PI);
+  check_shodan(-DBL_MIN * M_PI);
+
+  check_shodan(123456789e-13, "1.23456789e-5");
+  check_shodan(123456789e-12, "0.000123456789");
+  check_shodan(123456789e-11, "0.00123456789");
+  check_shodan(123456789e-10, "0.0123456789");
+  check_shodan(123456789e-9, "0.123456789");
+  check_shodan(123456789e-8, "1.23456789");
+  check_shodan(123456789e-7, "12.3456789");
+  check_shodan(123456789e-6, "123.456789");
+  check_shodan(123456789e-5, "1234.56789");
+  check_shodan(123456789e-4, "12345.6789");
+  check_shodan(123456789e-3, "123456.789");
+  check_shodan(123456789e-2, "1234567.89");
+  check_shodan(123456789e-1, "12345678.9");
+  check_shodan(123456789e0, "123456789.0");
+  check_shodan(123456789e1, "1234567890.0");
+  check_shodan(123456789e2, "12345678900.0");
+  check_shodan(123456789e3, "1.23456789e+11");
+  check_shodan(123456789e4, "1.23456789e+12");
+  check_shodan(123456789e5, "1.23456789e+13");
+
+  check_shodan(123456789987654321e-27, "1.2345678998765433e-10");
+  check_shodan(123456789987654321e-26, "1.2345678998765433e-9");
+  check_shodan(123456789987654321e-25, "1.2345678998765432e-8");
+  check_shodan(123456789987654321e-24, "1.2345678998765433e-7");
+  check_shodan(123456789987654321e-23, "1.2345678998765433e-6");
+  check_shodan(123456789987654321e-22, "1.2345678998765433e-5");
+  check_shodan(123456789987654321e-21, "0.00012345678998765432");
+  check_shodan(123456789987654321e-20, "0.0012345678998765433");
+  check_shodan(123456789987654321e-19, "0.012345678998765432");
+  check_shodan(123456789987654321e-18, "0.12345678998765432");
+  check_shodan(123456789987654321e-17, "1.2345678998765433");
+  check_shodan(123456789987654321e-16, "12.345678998765433");
+  check_shodan(123456789987654321e-15, "123.45678998765432");
+  check_shodan(123456789987654321e-14, "1234.5678998765432");
+  check_shodan(123456789987654321e-13, "12345.678998765432");
+  check_shodan(123456789987654321e-12, "123456.78998765432");
+  check_shodan(123456789987654321e-11, "1234567.8998765433");
+  check_shodan(123456789987654321e-10, "12345678.998765431");
+  check_shodan(123456789987654321e-9, "123456789.98765433");
+  check_shodan(123456789987654321e-8, "1234567899.8765433");
+  check_shodan(123456789987654321e-7, "12345678998.765432");
+  check_shodan(123456789987654321e-6, "1.2345678998765433e+11");
+  check_shodan(123456789987654321e-5, "1.2345678998765432e+12");
+  check_shodan(123456789987654321e-4, "1.2345678998765432e+13");
+  check_shodan(123456789987654321e-3, "1.2345678998765433e+14");
+  check_shodan(123456789987654321e-2, "1.2345678998765432e+15");
+  check_shodan(123456789987654321e-1, "1.2345678998765432e+16");
+  check_shodan(123456789987654321e0, "1.2345678998765432e+17");
+  check_shodan(123456789987654321e1, "1.2345678998765432e+18");
+  check_shodan(123456789987654321e2, "1.2345678998765433e+19");
+  check_shodan(123456789987654321e3, "1.2345678998765432e+20");
+  check_shodan(123456789987654321e4, "1.2345678998765432e+21");
+  check_shodan(123456789987654321e5, "1.2345678998765432e+22");
+
+  const double up = 1.1283791670955125739 /* 2/sqrt(pi) */;
+  for (double value = DBL_MIN * up; value < DBL_MAX / up; value *= up) {
+    check_shodan(value);
+    const float f32 = static_cast<float>(value);
+    if (!std::isinf(f32))
+      check_shodan(f32);
+  }
+
+  const double down = 0.91893853320467274178 /* ln(sqrt(2pi)) */;
+  for (double value = DBL_MAX * down; value > DBL_MIN / down; value *= down) {
+    check_shodan(value);
+    const float f32 = static_cast<float>(value);
+    if (!std::isinf(f32))
+      check_shodan(f32);
+  }
+
+  for (uint64_t mantissa = erthink::grisu::IEEE754_DOUBLE_MANTISSA_MASK;
+       mantissa != 0; mantissa >>= 1) {
+    for (uint64_t offset = 1; offset < mantissa; offset <<= 1) {
+      for (uint64_t exp = 0;
+           exp <= erthink::grisu::IEEE754_DOUBLE_EXPONENT_MASK;
+           exp += erthink::grisu::IEEE754_DOUBLE_IMPLICIT_LEAD) {
+        for (uint64_t bit = mantissa; bit != 0;) {
+          bit >>= 1;
+          check_shodan_x64((mantissa + offset) ^ exp ^ bit);
+          check_shodan_x64((mantissa - offset) ^ exp ^ bit);
+        }
+        if (GTEST_IS_EXECUTION_TIMEOUT())
+          break;
+      }
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
 
 runtime_limiter ci_runtime_limiter;
 

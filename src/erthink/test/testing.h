@@ -85,8 +85,13 @@ public:
 
   bool is_timeout() {
     if (edge && time(nullptr) > edge) {
-      std::cout << "[  SKIPPED ] RUNTIME_LIMIT was reached" << std::endl;
-      GTEST_SUCCESS_("Skipped") << "SKIPPEND by RUNTIME_LIMIT";
+      const auto current = ::testing::UnitTest::GetInstance();
+      static const void *last_reported;
+      if (last_reported != current) {
+        last_reported = current;
+        std::cout << "[  SKIPPED ] RUNTIME_LIMIT was reached" << std::endl;
+        GTEST_SUCCESS_("Skipped") << "SKIPPEND by RUNTIME_LIMIT";
+      }
       return true;
     }
     return false;

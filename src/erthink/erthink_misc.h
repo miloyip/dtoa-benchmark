@@ -69,7 +69,7 @@ array_length(const TYPE __maybe_unused (&array)[LENGTH]) {
 }
 
 template <typename TYPE, std::size_t LENGTH>
-cxx11_constexpr const TYPE *array_end(const TYPE (&array)[LENGTH]) {
+cxx11_constexpr TYPE *array_end(TYPE (&array)[LENGTH]) {
   return array + LENGTH;
 }
 
