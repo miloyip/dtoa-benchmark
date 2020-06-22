@@ -7,49 +7,49 @@
 
 // Disable bogus MSVC warnings.
 #if !defined(_CRT_SECURE_NO_WARNINGS) && defined(_MSC_VER)
-#  define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "src/fmt/os.h"
+#include "os.h"
 
 #include <climits>
 
 #if FMT_USE_FCNTL
-#  include <sys/stat.h>
-#  include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#  ifndef _WIN32
-#    include <unistd.h>
-#  else
-#    ifndef WIN32_LEAN_AND_MEAN
-#      define WIN32_LEAN_AND_MEAN
-#    endif
-#    include <io.h>
-#    include <windows.h>
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <io.h>
+#include <windows.h>
 
-#    define O_CREAT _O_CREAT
-#    define O_TRUNC _O_TRUNC
+#define O_CREAT _O_CREAT
+#define O_TRUNC _O_TRUNC
 
-#    ifndef S_IRUSR
-#      define S_IRUSR _S_IREAD
-#    endif
+#ifndef S_IRUSR
+#define S_IRUSR _S_IREAD
+#endif
 
-#    ifndef S_IWUSR
-#      define S_IWUSR _S_IWRITE
-#    endif
+#ifndef S_IWUSR
+#define S_IWUSR _S_IWRITE
+#endif
 
-#    ifdef __MINGW32__
-#      define _SH_DENYNO 0x40
-#    endif
-#  endif  // _WIN32
-#endif    // FMT_USE_FCNTL
+#ifdef __MINGW32__
+#define _SH_DENYNO 0x40
+#endif
+#endif // _WIN32
+#endif // FMT_USE_FCNTL
 
 #ifdef _WIN32
-#  include <windows.h>
+#include <windows.h>
 #endif
 
 #ifdef fileno
-#  undef fileno
+#undef fileno
 #endif
 
 namespace {
@@ -68,20 +68,21 @@ using RWResult = ssize_t;
 
 inline std::size_t convert_rwcount(std::size_t count) { return count; }
 #endif
-}  // namespace
+} // namespace
 
 FMT_BEGIN_NAMESPACE
 
 #ifdef _WIN32
-internal::utf16_to_utf8::utf16_to_utf8(wstring_view s) {
+detail::utf16_to_utf8::utf16_to_utf8(wstring_view s) {
   if (int error_code = convert(s)) {
     FMT_THROW(windows_error(error_code,
                             "cannot convert string from UTF-16 to UTF-8"));
   }
 }
 
-int internal::utf16_to_utf8::convert(wstring_view s) {
-  if (s.size() > INT_MAX) return ERROR_INVALID_PARAMETER;
+int detail::utf16_to_utf8::convert(wstring_view s) {
+  if (s.size() > INT_MAX)
+    return ERROR_INVALID_PARAMETER;
   int s_size = static_cast<int>(s.size());
   if (s_size == 0) {
     // WideCharToMultiByte does not support zero length, handle separately.
@@ -92,11 +93,13 @@ int internal::utf16_to_utf8::convert(wstring_view s) {
 
   int length = WideCharToMultiByte(CP_UTF8, 0, s.data(), s_size, nullptr, 0,
                                    nullptr, nullptr);
-  if (length == 0) return GetLastError();
+  if (length == 0)
+    return GetLastError();
   buffer_.resize(length + 1);
   length = WideCharToMultiByte(CP_UTF8, 0, s.data(), s_size, &buffer_[0],
                                length, nullptr, nullptr);
-  if (length == 0) return GetLastError();
+  if (length == 0)
+    return GetLastError();
   buffer_[length] = 0;
   return 0;
 }
@@ -105,18 +108,18 @@ void windows_error::init(int err_code, string_view format_str,
                          format_args args) {
   error_code_ = err_code;
   memory_buffer buffer;
-  internal::format_windows_error(buffer, err_code, vformat(format_str, args));
-  std::runtime_error& base = *this;
+  detail::format_windows_error(buffer, err_code, vformat(format_str, args));
+  std::runtime_error &base = *this;
   base = std::runtime_error(to_string(buffer));
 }
 
-void internal::format_windows_error(internal::buffer<char>& out, int error_code,
-                                    string_view message) FMT_NOEXCEPT {
+void detail::format_windows_error(detail::buffer<char> &out, int error_code,
+                                  string_view message) FMT_NOEXCEPT {
   FMT_TRY {
     wmemory_buffer buf;
     buf.resize(inline_buffer_size);
     for (;;) {
-      wchar_t* system_message = &buf[0];
+      wchar_t *system_message = &buf[0];
       int result = FormatMessageW(
           FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
           error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), system_message,
@@ -124,16 +127,13 @@ void internal::format_windows_error(internal::buffer<char>& out, int error_code,
       if (result != 0) {
         utf16_to_utf8 utf8_message;
         if (utf8_message.convert(system_message) == ERROR_SUCCESS) {
-          internal::writer w(out);
-          w.write(message);
-          w.write(": ");
-          w.write(utf8_message);
+          format_to(std::back_inserter(out), "{}: {}", message, utf8_message);
           return;
         }
         break;
       }
       if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-        break;  // Can't get error message, report error code instead.
+        break; // Can't get error message, report error code instead.
       buf.resize(buf.size() * 2);
     }
   }
@@ -143,9 +143,9 @@ void internal::format_windows_error(internal::buffer<char>& out, int error_code,
 
 void report_windows_error(int error_code,
                           fmt::string_view message) FMT_NOEXCEPT {
-  report_error(internal::format_windows_error, error_code, message);
+  report_error(detail::format_windows_error, error_code, message);
 }
-#endif  // _WIN32
+#endif // _WIN32
 
 buffered_file::~buffered_file() FMT_NOEXCEPT {
   if (file_ && FMT_SYSTEM(fclose(file_)) != 0)
@@ -160,10 +160,12 @@ buffered_file::buffered_file(cstring_view filename, cstring_view mode) {
 }
 
 void buffered_file::close() {
-  if (!file_) return;
+  if (!file_)
+    return;
   int result = FMT_SYSTEM(fclose(file_));
   file_ = nullptr;
-  if (result != 0) FMT_THROW(system_error(errno, "cannot close file"));
+  if (result != 0)
+    FMT_THROW(system_error(errno, "cannot close file"));
 }
 
 // A macro used to prevent expansion of fileno on broken versions of MinGW.
@@ -171,19 +173,20 @@ void buffered_file::close() {
 
 int buffered_file::fileno() const {
   int fd = FMT_POSIX_CALL(fileno FMT_ARGS(file_));
-  if (fd == -1) FMT_THROW(system_error(errno, "cannot get file descriptor"));
+  if (fd == -1)
+    FMT_THROW(system_error(errno, "cannot get file descriptor"));
   return fd;
 }
 
 #if FMT_USE_FCNTL
 file::file(cstring_view path, int oflag) {
   int mode = S_IRUSR | S_IWUSR;
-#  if defined(_WIN32) && !defined(__MINGW32__)
+#if defined(_WIN32) && !defined(__MINGW32__)
   fd_ = -1;
   FMT_POSIX_CALL(sopen_s(&fd_, path.c_str(), oflag, _SH_DENYNO, mode));
-#  else
+#else
   FMT_RETRY(fd_, FMT_POSIX_CALL(open(path.c_str(), oflag, mode)));
-#  endif
+#endif
   if (fd_ == -1)
     FMT_THROW(system_error(errno, "cannot open file {}", path.c_str()));
 }
@@ -196,16 +199,18 @@ file::~file() FMT_NOEXCEPT {
 }
 
 void file::close() {
-  if (fd_ == -1) return;
+  if (fd_ == -1)
+    return;
   // Don't retry close in case of EINTR!
   // See http://linux.derkeiler.com/Mailing-Lists/Kernel/2005-09/3000.html
   int result = FMT_POSIX_CALL(close(fd_));
   fd_ = -1;
-  if (result != 0) FMT_THROW(system_error(errno, "cannot close file"));
+  if (result != 0)
+    FMT_THROW(system_error(errno, "cannot close file"));
 }
 
 long long file::size() const {
-#  ifdef _WIN32
+#ifdef _WIN32
   // Use GetFileSize instead of GetFileSizeEx for the case when _WIN32_WINNT
   // is less than 0x0500 as is the case with some default MinGW builds.
   // Both functions support large file sizes.
@@ -219,7 +224,7 @@ long long file::size() const {
   }
   unsigned long long long_size = size_upper;
   return (long_size << sizeof(DWORD) * CHAR_BIT) | size_lower;
-#  else
+#else
   using Stat = struct stat;
   Stat file_stat = Stat();
   if (FMT_POSIX_CALL(fstat(fd_, &file_stat)) == -1)
@@ -227,21 +232,23 @@ long long file::size() const {
   static_assert(sizeof(long long) >= sizeof(file_stat.st_size),
                 "return type of file::size is not large enough");
   return file_stat.st_size;
-#  endif
+#endif
 }
 
-std::size_t file::read(void* buffer, std::size_t count) {
+std::size_t file::read(void *buffer, std::size_t count) {
   RWResult result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(read(fd_, buffer, convert_rwcount(count))));
-  if (result < 0) FMT_THROW(system_error(errno, "cannot read from file"));
-  return internal::to_unsigned(result);
+  if (result < 0)
+    FMT_THROW(system_error(errno, "cannot read from file"));
+  return detail::to_unsigned(result);
 }
 
-std::size_t file::write(const void* buffer, std::size_t count) {
+std::size_t file::write(const void *buffer, std::size_t count) {
   RWResult result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(write(fd_, buffer, convert_rwcount(count))));
-  if (result < 0) FMT_THROW(system_error(errno, "cannot write to file"));
-  return internal::to_unsigned(result);
+  if (result < 0)
+    FMT_THROW(system_error(errno, "cannot write to file"));
+  return detail::to_unsigned(result);
 }
 
 file file::dup(int fd) {
@@ -262,37 +269,43 @@ void file::dup2(int fd) {
   }
 }
 
-void file::dup2(int fd, error_code& ec) FMT_NOEXCEPT {
+void file::dup2(int fd, error_code &ec) FMT_NOEXCEPT {
   int result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(dup2(fd_, fd)));
-  if (result == -1) ec = error_code(errno);
+  if (result == -1)
+    ec = error_code(errno);
 }
 
-void file::pipe(file& read_end, file& write_end) {
+void file::pipe(file &read_end, file &write_end) {
   // Close the descriptors first to make sure that assignments don't throw
   // and there are no leaks.
   read_end.close();
   write_end.close();
   int fds[2] = {};
-#  ifdef _WIN32
+#ifdef _WIN32
   // Make the default pipe capacity same as on Linux 2.6.11+.
   enum { DEFAULT_CAPACITY = 65536 };
   int result = FMT_POSIX_CALL(pipe(fds, DEFAULT_CAPACITY, _O_BINARY));
-#  else
+#else
   // Don't retry as the pipe function doesn't return EINTR.
   // http://pubs.opengroup.org/onlinepubs/009696799/functions/pipe.html
   int result = FMT_POSIX_CALL(pipe(fds));
-#  endif
-  if (result != 0) FMT_THROW(system_error(errno, "cannot create pipe"));
+#endif
+  if (result != 0)
+    FMT_THROW(system_error(errno, "cannot create pipe"));
   // The following assignments don't throw because read_fd and write_fd
   // are closed.
   read_end = file(fds[0]);
   write_end = file(fds[1]);
 }
 
-buffered_file file::fdopen(const char* mode) {
-  // Don't retry as fdopen doesn't return EINTR.
-  FILE* f = FMT_POSIX_CALL(fdopen(fd_, mode));
+buffered_file file::fdopen(const char *mode) {
+// Don't retry as fdopen doesn't return EINTR.
+#if defined(__MINGW32__) && defined(_POSIX_)
+  FILE *f = ::fdopen(fd_, mode);
+#else
+  FILE *f = FMT_POSIX_CALL(fdopen(fd_, mode));
+#endif
   if (!f)
     FMT_THROW(
         system_error(errno, "cannot associate stream with file descriptor"));
@@ -302,15 +315,16 @@ buffered_file file::fdopen(const char* mode) {
 }
 
 long getpagesize() {
-#  ifdef _WIN32
+#ifdef _WIN32
   SYSTEM_INFO si;
   GetSystemInfo(&si);
   return si.dwPageSize;
-#  else
+#else
   long size = FMT_POSIX_CALL(sysconf(_SC_PAGESIZE));
-  if (size < 0) FMT_THROW(system_error(errno, "cannot get memory page size"));
+  if (size < 0)
+    FMT_THROW(system_error(errno, "cannot get memory page size"));
   return size;
-#  endif
+#endif
 }
-#endif  // FMT_USE_FCNTL
+#endif // FMT_USE_FCNTL
 FMT_END_NAMESPACE
