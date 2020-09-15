@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -28,6 +28,11 @@
 #include <cmath>  // for M_PI, etc
 #ifdef _MSC_VER
 #pragma warning(pop)
+#endif
+
+#if defined(__LCC__)
+#pragma diag_suppress 186 /* pointless comparison of unsigned integer with     \
+                             zero [-Wtype-limits] */
 #endif
 
 //------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -68,8 +68,10 @@ static cxx11_constexpr uint64_t mul_32x32_64(uint32_t a, uint32_t b) {
 static __maybe_unused __always_inline uint64_t mul_64x64_128(uint64_t a,
                                                              uint64_t b,
                                                              uint64_t *high) {
-#if defined(__SIZEOF_INT128__) ||                                              \
-    (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
+#if (defined(__SIZEOF_INT128__) ||                                             \
+     (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)) &&            \
+    (!defined(__LCC__) ||                                                      \
+     __LCC__ != 124 /* https://bugs.mcst.ru/bugzilla/show_bug.cgi?id=5112 */)
   __uint128_t r = (__uint128_t)a * (__uint128_t)b;
   /* modern GCC could nicely optimize this */
   *high = (uint64_t)(r >> 64);

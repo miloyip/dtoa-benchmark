@@ -1,4 +1,4 @@
-﻿##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -194,24 +194,26 @@ if(BUILD_TESTING)
       list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 local_HAS_CXX20)
       list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 local_HAS_CXX17)
       list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 local_HAS_CXX14)
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 local_HAS_CXX11)
 
       if(NOT DEFINED GTEST_CXX_STANDARD)
         if(DEFINED CMAKE_CXX_STANDARD)
           set(GTEST_CXX_STANDARD ${CMAKE_CXX_STANDARD})
-        elseif(NOT local_HAS_CXX20 LESS 0)
+        elseif(NOT local_HAS_CXX20 LESS 0 AND NOT "$ENV{COVERITY_UNSUPPORTED_COMPILER_INVOCATION}" STREQUAL "1")
           set(GTEST_CXX_STANDARD 20)
         elseif(NOT local_HAS_CXX17 LESS 0)
           set(GTEST_CXX_STANDARD 17)
         elseif(NOT local_HAS_CXX14 LESS 0)
           set(GTEST_CXX_STANDARD 14)
-        else()
+        elseif(NOT local_HAS_CXX11 LESS 0)
           set(GTEST_CXX_STANDARD 11)
         endif()
       endif()
-      message(STATUS "Use C++${GTEST_CXX_STANDARD} for GoogleTest")
-
-      target_compile_features(gtest PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
-      target_compile_features(gtest_main PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
+      if(GTEST_CXX_STANDARD)
+        message(STATUS "Use C++${GTEST_CXX_STANDARD} for GoogleTest")
+        target_compile_features(gtest PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
+        target_compile_features(gtest_main PRIVATE "cxx_std_${GTEST_CXX_STANDARD}")
+      endif()
 
       if(CC_HAS_WERROR)
         if(MSVC)
@@ -236,13 +238,15 @@ if(BUILD_TESTING)
       endif()
 
       set(GTEST_BOTH_LIBRARIES gtest gtest_main)
+      add_library(GTest::GTest ALIAS gtest)
+      add_library(GTest::Main ALIAS gtest_main)
       set(GTEST_FOUND TRUE)
     endif()
   endif()
 
   if(GTEST_FOUND)
     enable_testing()
-    set(UT_LIBRARIES ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    set(UT_LIBRARIES GTest::Main GTest::GTest ${CMAKE_THREAD_LIBS_INIT})
     if(MEMORYCHECK_COMMAND OR CMAKE_MEMORYCHECK_COMMAND)
       add_custom_target(test_memcheck
         COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --test-action memcheck

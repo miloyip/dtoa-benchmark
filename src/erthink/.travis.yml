@@ -74,6 +74,7 @@ script: |
        echo "-------------------------------------------------------------------------------" ) \
     )
   else
+    COVERITY_UNSUPPORTED_COMPILER_INVOCATION=1 \
     COVERITY_SCAN_PROJECT_NAME="erthink/erthink" \
     COVERITY_SCAN_NOTIFICATION_EMAIL="leo@yuriev.ru" \
     COVERITY_SCAN_BUILD_COMMAND_PREPEND="cmake -DCMAKE_BUILD_TYPE=Debug ." \

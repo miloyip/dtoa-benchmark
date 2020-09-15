@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -19,6 +19,6 @@
 #pragma optimize("gs", on)
 #endif
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__LCC__)
 #pragma GCC optimize("-Os")
 #endif

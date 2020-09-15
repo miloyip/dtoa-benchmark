@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -55,7 +55,7 @@ cxx11_constexpr bool is_constant_evaluated() cxx11_noexcept {
 #define erthink_dynamic_constexpr cxx11_constexpr
 #define ERTHINK_DYNAMIC_CONSTEXPR(RESULT_TYPE, NAME, DECLARGS_PARENTHESIZED,   \
                                   CALLARGS_PARENTHESIZED, PROBE_ARG)           \
-  static cxx11_constexpr RESULT_TYPE NAME DECLARGS_PARENTHESIZED               \
+  static cxx14_constexpr RESULT_TYPE NAME DECLARGS_PARENTHESIZED               \
       cxx11_noexcept {                                                         \
     return __builtin_is_constant_evaluated()                                   \
                ? NAME##_constexpr CALLARGS_PARENTHESIZED                       \

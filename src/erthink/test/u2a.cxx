@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -19,6 +19,11 @@
 
 #include "erthink_defs.h"
 #include "erthink_u2a.h"
+
+#if defined(__LCC__)
+#pragma diag_suppress 186 /* pointless comparison of unsigned integer with     \
+                             zero [-Wtype-limits] */
+#endif
 
 __hot __dll_export __noinline char *_dec2(const unsigned value, char *ptr) {
   return erthink::dec2(value, ptr);

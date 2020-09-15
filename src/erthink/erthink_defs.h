@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -164,7 +164,9 @@
 #define __fallthrough [[fallthrough]]
 #elif __GNUC_PREREQ(8, 0) && defined(__cplusplus) && __cplusplus >= 201103L
 #define __fallthrough [[fallthrough]]
-#elif __GNUC_PREREQ(7, 0)
+#elif __GNUC_PREREQ(7, 0) &&                                                   \
+    (!defined(__LCC__) || (__LCC__ == 124 && __LCC_MINOR__ >= 12) ||           \
+     (__LCC__ == 125 && __LCC_MINOR__ >= 5) || (__LCC__ >= 126))
 #define __fallthrough __attribute__((__fallthrough__))
 #elif defined(__clang__) && defined(__cplusplus) && __cplusplus >= 201103L &&  \
     __has_feature(cxx_attributes) && __has_warning("-Wimplicit-fallthrough")
@@ -199,7 +201,8 @@
 #if !defined(__cplusplus)
 #define cxx11_constexpr __inline
 #define cxx11_constexpr_var const
-#elif __cplusplus < 201103L
+#elif !defined(__cpp_constexpr) || __cpp_constexpr < 200704L ||                \
+    (defined(__LCC__) && __LCC__ < 124)
 #define cxx11_constexpr inline
 #define cxx11_constexpr_var const
 #else
@@ -264,13 +267,10 @@
 #endif /* if_constexpr */
 
 #if !defined(constexpr_assert)
-#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+#if !defined(__cpp_constexpr) || __cpp_constexpr >= 201304L
 #define constexpr_assert(cond) assert(cond)
 #else
-#define constexpr_assert(cond)                                                 \
-  do {                                                                         \
-    (void)(cond);                                                              \
-  } while (0)
+#define constexpr_assert(cond)
 #endif
 #endif /* constexpr_assert */
 
@@ -278,7 +278,7 @@
 #ifdef NDEBUG
 #define NDEBUG_CONSTEXPR cxx11_constexpr
 #else
-#define NDEBUG_CONSTEXPR
+#define NDEBUG_CONSTEXPR inline
 #endif
 #endif /* NDEBUG_CONSTEXPR */
 
@@ -385,7 +385,9 @@
  * Such a function can be subject to common subexpression elimination
  * and loop optimization just as an arithmetic operator would be.
  * These functions should be declared with the attribute pure. */
-#if defined(__GNUC__) || __has_attribute(__pure__)
+#if (defined(__GNUC__) || __has_attribute(__pure__)) &&                        \
+    (!defined(__clang__) /* https://bugs.llvm.org/show_bug.cgi?id=43275 */ ||  \
+     !defined(__cplusplus) || !__has_feature(cxx_exceptions))
 #define __pure_function __attribute__((__pure__))
 #else
 #define __pure_function
@@ -402,7 +404,9 @@
  * data pointed to must not be declared const. Likewise, a function
  * that calls a non-const function usually must not be const.
  * It does not make sense for a const function to return void. */
-#if defined(__GNUC__) || __has_attribute(__const__)
+#if (defined(__GNUC__) || __has_attribute(__const__)) &&                       \
+    (!defined(__clang__) /* https://bugs.llvm.org/show_bug.cgi?id=43275 */ ||  \
+     !defined(__cplusplus) || !__has_feature(cxx_exceptions))
 #define __const_function __attribute__((__const__))
 #else
 #define __const_function
@@ -587,6 +591,15 @@ static __inline void __noop_consume_args(void *anchor, ...) { (void)anchor; }
 #define unlikely(x) (x)
 #endif
 #endif /* unlikely */
+
+#if defined(__cplusplus) && __cplusplus >= 201103L && defined(__LCC__) &&      \
+    __LCC__ < 125
+#define constexpr_likely(cond) (cond)
+#define constexpr_unlikely(cond) (cond)
+#else
+#define constexpr_likely(cond) likely(cond)
+#define constexpr_unlikely(cond) unlikely(cond)
+#endif
 
 #if !defined(alignas) && (!defined(__cplusplus) || __cplusplus < 201103L)
 #if defined(__GNUC__) || defined(__clang__) || __has_attribute(__aligned__)

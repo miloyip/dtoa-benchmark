@@ -1,4 +1,4 @@
-﻿##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -82,22 +82,25 @@ endif()
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 HAS_CXX20)
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 HAS_CXX17)
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 HAS_CXX14)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 HAS_CXX11)
 if(NOT DEFINED ERTHINK_CXX_STANDARD)
   if(DEFINED CMAKE_CXX_STANDARD)
     set(ERTHINK_CXX_STANDARD ${CMAKE_CXX_STANDARD})
-  elseif(NOT HAS_CXX20 LESS 0)
+  elseif(NOT HAS_CXX20 LESS 0 AND NOT "$ENV{COVERITY_UNSUPPORTED_COMPILER_INVOCATION}" STREQUAL "1")
     set(ERTHINK_CXX_STANDARD 20)
   elseif(NOT HAS_CXX17 LESS 0)
     set(ERTHINK_CXX_STANDARD 17)
   elseif(NOT HAS_CXX14 LESS 0)
     set(ERTHINK_CXX_STANDARD 14)
-  else()
+  elseif(NOT HAS_CXX11 LESS 0)
     set(ERTHINK_CXX_STANDARD 11)
   endif()
 endif()
-message(STATUS "Use C++${ERTHINK_CXX_STANDARD} for Erthink")
-if(NOT SUBPROJECT OR NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
+if(ERTHINK_CXX_STANDARD)
+  message(STATUS "Use C++${ERTHINK_CXX_STANDARD} for Erthink")
+  if(NOT SUBPROJECT OR NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
+  endif()
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake")
@@ -224,10 +227,12 @@ set(erthink_HEADERS
   erthink_rot.h erthink_u2a.h erthink_optimize4size.h erthink_optimize4speed.h
   erthink_short_alloc.h erthink_ifunc.h erthink_endian.h erthink.h)
 
-target_compile_features(erthink INTERFACE "cxx_std_${ERTHINK_CXX_STANDARD}")
+if(ERTHINK_CXX_STANDARD)
+  target_compile_features(erthink INTERFACE "cxx_std_${ERTHINK_CXX_STANDARD}")
+endif()
 
 option(ERTHINK_ENABLE_TESTS "Build erthink tests." ${BUILD_TESTING})
-if(ERTHINK_ENABLE_TESTS)
+if(ERTHINK_ENABLE_TESTS AND BUILD_TESTING)
   add_subdirectory(test)
 endif()
 

@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -89,7 +89,7 @@ template <typename TO, typename FROM,
           typename erthink::enable_if_t<std::is_trivially_copyable<TO>::value,
                                         int> = 0>
 #endif
-    cxx11_constexpr TO bit_cast(const FROM &src) cxx11_noexcept {
+    cxx14_constexpr TO bit_cast(const FROM &src) cxx11_noexcept {
   static_assert(sizeof(TO) == sizeof(FROM),
                 "bit_cast requires source and destination to be the same size");
   static_assert(std::is_trivially_copyable<FROM>::value,

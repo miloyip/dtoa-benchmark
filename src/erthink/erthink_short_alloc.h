@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Copyright (c) 2019-2020 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
@@ -150,19 +150,24 @@ public:
     std::memset(buf_, 0x55, sizeof(buf_));
 #endif
   }
-  void NDEBUG_CONSTEXPR debug_check() const cxx11_noexcept {
+
+  cxx11_constexpr bool debug_check() const cxx11_noexcept {
+#ifndef NDEBUG
     assert(checkpoint_A_ == signature_A);
     assert(checkpoint_B_ == signature_B);
     assert(checkpoint_C_ == signature_C);
     assert(ptr_ >= buf_ && ptr_ <= buf_ + sizeof(buf_));
+#endif
+    return true;
   }
 
   allocation_arena(const allocation_arena &) = delete;
   allocation_arena &operator=(const allocation_arena &) = delete;
 
-  NDEBUG_CONSTEXPR bool
-  pointer_in_bounds(const void *ptr) const cxx11_noexcept {
+  cxx11_constexpr bool pointer_in_bounds(const void *ptr) const cxx11_noexcept {
+#ifndef NDEBUG
     debug_check();
+#endif
     return pointer_in_buffer(static_cast<const char *>(ptr));
   }
   cxx11_constexpr bool chunk_in_bounds(const void *ptr,
@@ -232,8 +237,10 @@ public:
     throw std::logic_error("short_alloc was disabled to exhausted arena");
   }
 
-  NDEBUG_CONSTEXPR std::size_t used() const cxx11_noexcept {
+  cxx11_constexpr std::size_t used() const cxx11_noexcept {
+#ifndef NDEBUG
     debug_check();
+#endif
     return static_cast<std::size_t>(ptr_ - buf_);
   }
 
