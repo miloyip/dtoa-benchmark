@@ -1,4 +1,4 @@
-﻿#include "erthink/erthink_d2a.h"
+﻿#include "erthink/erthink_d2a.h++"
 #include "test.h"
 
 char *dtoa_erthink(double v, char *const buffer) {

@@ -7,8 +7,8 @@ task:
     GTEST_RUNTIME_LIMIT: 99
   install_script: pkg install -y cmake git
   script: |
-    git fetch --tags --prune
-    git submodule foreach --recursive git fetch --unshallow --tags --prune
+    git fetch --tags --prune --force
+    git submodule foreach --recursive git fetch --unshallow --tags --prune --force
     cmake --version
     cmake . &&  cmake --build . && (ctest || \
        (echo "-------------------------------------------------------------------------------"; \

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 2019-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,6 +58,12 @@
 
 namespace erthink {
 
+#if __GNUC_PREREQ(5, 0) || !defined(_GCC_MAX_ALIGN_T)
+using max_align_t = std::max_align_t;
+#else
+using max_align_t = ::max_align_t;
+#endif /* workaround for std::max_align_t */
+
 class allocation_arena_exhausted : public std::bad_alloc {
 public:
   allocation_arena_exhausted() = default;
@@ -68,7 +74,7 @@ public:
 };
 
 template <bool ALLOW_OUTLIVE, std::size_t N_BYTES,
-          std::size_t ALIGN = alignof(std::max_align_t)>
+          std::size_t ALIGN = alignof(max_align_t)>
 class allocation_arena {
 public:
   static cxx11_constexpr_var auto allow_outlive = ALLOW_OUTLIVE;
@@ -99,7 +105,7 @@ private:
 #ifndef NDEBUG
   std::size_t checkpoint_A_;
 #endif
-  alignas(alignment) char buf_[size];
+  alignas(ALIGN) char buf_[size];
 #ifndef NDEBUG
   std::size_t checkpoint_B_;
 #endif
@@ -136,7 +142,7 @@ public:
   NDEBUG_CONSTEXPR allocation_arena() cxx11_noexcept : ptr_(buf_) {
     static_assert(size > 1, "Oops, ALLOW_OUTLIVE is messed with N_BYTES?");
 #if !ERTHINK_PROVIDE_ALIGNED_NEW
-    static_assert(!allow_outlive || alignment <= alignof(std::max_align_t),
+    static_assert(!allow_outlive || alignment <= alignof(max_align_t),
                   "you've chosen an alignment that is larger than "
                   "alignof(std::max_align_t), and cannot be guaranteed by "
                   "normal operator new");
@@ -152,23 +158,25 @@ public:
   }
 
   cxx11_constexpr bool debug_check() const cxx11_noexcept {
+    return
 #ifndef NDEBUG
-    assert(checkpoint_A_ == signature_A);
-    assert(checkpoint_B_ == signature_B);
-    assert(checkpoint_C_ == signature_C);
-    assert(ptr_ >= buf_ && ptr_ <= buf_ + sizeof(buf_));
+        CONSTEXPR_ASSERT(checkpoint_A_ == signature_A),
+        CONSTEXPR_ASSERT(checkpoint_B_ == signature_B),
+        CONSTEXPR_ASSERT(checkpoint_C_ == signature_C),
+        CONSTEXPR_ASSERT(ptr_ >= buf_ && ptr_ <= buf_ + sizeof(buf_)),
 #endif
-    return true;
+        true;
   }
 
   allocation_arena(const allocation_arena &) = delete;
   allocation_arena &operator=(const allocation_arena &) = delete;
 
   cxx11_constexpr bool pointer_in_bounds(const void *ptr) const cxx11_noexcept {
+    return
 #ifndef NDEBUG
-    debug_check();
+        debug_check(),
 #endif
-    return pointer_in_buffer(static_cast<const char *>(ptr));
+        pointer_in_buffer(static_cast<const char *>(ptr));
   }
   cxx11_constexpr bool chunk_in_bounds(const void *ptr,
                                        std::size_t bytes) const cxx11_noexcept {
@@ -238,10 +246,11 @@ public:
   }
 
   cxx11_constexpr std::size_t used() const cxx11_noexcept {
+    return
 #ifndef NDEBUG
-    debug_check();
+        debug_check(),
 #endif
-    return static_cast<std::size_t>(ptr_ - buf_);
+        static_cast<std::size_t>(ptr_ - buf_);
   }
 
   void reset() cxx11_noexcept {
@@ -296,7 +305,7 @@ public:
     arena_.deallocate(reinterpret_cast<char *>(p), n * sizeof(T));
   }
 
-  template <typename... Args> inline void construct(T *p, Args &&... args) {
+  template <typename... Args> inline void construct(T *p, Args &&...args) {
     new (p) T(std::forward<Args>(args)...);
   }
 

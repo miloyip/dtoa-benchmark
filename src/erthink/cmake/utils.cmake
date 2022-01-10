@@ -1,4 +1,4 @@
-##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2021 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -13,12 +13,17 @@
 ##  limitations under the License.
 ##
 
-cmake_minimum_required(VERSION 3.8.2)
-cmake_policy(PUSH)
-cmake_policy(VERSION 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  cmake_minimum_required(VERSION 3.8.2)
+else()
+  cmake_minimum_required(VERSION 3.12)
+endif()
 
-macro(add_compile_flags langs)
-  foreach(_lang ${langs})
+cmake_policy(PUSH)
+cmake_policy(VERSION ${CMAKE_MINIMUM_REQUIRED_VERSION})
+
+macro(add_compile_flags languages)
+  foreach(_lang ${languages})
     string(REPLACE ";" " " _flags "${ARGN}")
     if(CMAKE_CXX_COMPILER_LOADED AND _lang STREQUAL "CXX")
       set("${_lang}_FLAGS" "${${_lang}_FLAGS} ${_flags}")
@@ -113,23 +118,34 @@ macro(fetch_version name source_root_directory parent_scope)
       message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%H HEAD' failed)")
     endif()
 
-    execute_process(COMMAND ${GIT} tag --sort=-version:refname
-      OUTPUT_VARIABLE tag_list
+    execute_process(COMMAND ${GIT} describe --tags --abbrev=0 "--match=v[0-9]*"
+      OUTPUT_VARIABLE last_release_tag
       OUTPUT_STRIP_TRAILING_WHITESPACE
       WORKING_DIRECTORY ${source_root_directory}
       RESULT_VARIABLE rc)
     if(rc)
-      message(FATAL_ERROR "Please install latest version of git ('tag --sort=-version:refname' failed)")
+      message(FATAL_ERROR "Please install latest version of git ('describe --tags --abbrev=0 --match=v[0-9]*' failed)")
     endif()
-    string(REGEX REPLACE "\n" ";" tag_list "${tag_list}")
-    set(last_release_tag "")
-    set(git_revlist_arg "HEAD")
-    foreach(tag IN LISTS tag_list)
-      if(NOT last_release_tag)
-        string(REGEX MATCH "^v[0-9]+(\.[0-9]+)+" last_release_tag "${tag}")
-        set(git_revlist_arg "${tag}..HEAD")
+    if (last_release_tag)
+      set(git_revlist_arg "${last_release_tag}..HEAD")
+    else()
+      execute_process(COMMAND ${GIT} tag --sort=-version:refname
+        OUTPUT_VARIABLE tag_list
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY ${source_root_directory}
+        RESULT_VARIABLE rc)
+      if(rc)
+        message(FATAL_ERROR "Please install latest version of git ('tag --sort=-version:refname' failed)")
       endif()
-    endforeach(tag)
+      string(REGEX REPLACE "\n" ";" tag_list "${tag_list}")
+      set(git_revlist_arg "HEAD")
+      foreach(tag IN LISTS tag_list)
+        if(NOT last_release_tag)
+          string(REGEX MATCH "^v[0-9]+(\.[0-9]+)+" last_release_tag "${tag}")
+          set(git_revlist_arg "${tag}..HEAD")
+        endif()
+      endforeach(tag)
+    endif()
     execute_process(COMMAND ${GIT} rev-list --count "${git_revlist_arg}"
       OUTPUT_VARIABLE ${name}_GIT_REVISION
       OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -155,20 +171,23 @@ macro(fetch_version name source_root_directory parent_scope)
 
   if(NOT ${name}_GIT_VERSION OR NOT ${name}_GIT_TIMESTAMP OR ${name}_GIT_REVISION STREQUAL "")
     if(GIT AND EXISTS "${source_root_directory}/.git")
-      message(WARNING "Unable to retrive ${name} version from git.")
+      message(WARNING "Unable to retrieve ${name} version from git.")
     endif()
     set(${name}_GIT_VERSION "0;0;0;0")
     set(${name}_GIT_TIMESTAMP "")
     set(${name}_GIT_REVISION 0)
 
     # Try to get version from VERSION file
-    set(version_file "${source_root_directory}/VERSION")
+    set(version_file "${source_root_directory}/VERSION.txt")
+    if(NOT EXISTS "${version_file}")
+      set(version_file "${source_root_directory}/VERSION")
+    endif()
     if(EXISTS "${version_file}")
       file(STRINGS "${version_file}" ${name}_VERSION LIMIT_COUNT 1 LIMIT_INPUT 42)
     endif()
 
     if(NOT ${name}_VERSION)
-      message(WARNING "Unable to retrive ${name} version from \"${version_file}\" file.")
+      message(WARNING "Unable to retrieve ${name} version from \"${version_file}\" file.")
       set(${name}_VERSION_LIST ${${name}_GIT_VERSION})
       string(REPLACE ";" "." ${name}_VERSION "${${name}_GIT_VERSION}")
     else()

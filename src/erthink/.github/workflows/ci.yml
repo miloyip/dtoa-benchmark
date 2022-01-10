@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, ubuntu-18.04]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Fetch tags
+      run: git fetch --unshallow --tags --prune --force
+    - name: Info
+      run: cmake --version && cc --version && c++ --version
+    - name: Configure
+      run: cmake .
+    - name: Build
+      run: make --keep-going all
+    - name: Test
+      env:
+        GTEST_SHUFFLE: 1
+        GTEST_RUNTIME_LIMIT: 99
+        MALLOC_CHECK_: 7
+        MALLOC_PERTURB_: 42
+      run: make --keep-going test || ctest --rerun-failed --output-on-failure

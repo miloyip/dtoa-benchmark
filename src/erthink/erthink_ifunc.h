@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,10 @@
  * and https://sourceware.org/glibc/wiki/GNU_IFUNC */
 
 #ifndef ERTHINK_USE_ELF_IFUNC
-#if __has_attribute(__ifunc__) &&                                              \
+#if defined(__clang__) && __clang_major__ < 4
+/* Clang 3.9 have a trouble with ifunc, especially when LTO is enabled. */
+#define ERTHINK_USE_ELF_IFUNC 0
+#elif __has_attribute(__ifunc__) &&                                            \
     defined(__ELF__) /* ifunc is broken on Darwin/OSX */
 /* Use ifunc/gnu_indirect_function if corresponding attribute is available,
  * Assuming compiler will generate properly code even when
@@ -134,7 +137,7 @@
   RESULT_TYPE(*RESOLVER(void)) DECLARGS_PARENTHESIZED;                         \
                                                                                \
   static __cold void __attribute__((__constructor__))                          \
-      NAME##_iFunc_init(void) {                                                \
+  NAME##_iFunc_init(void) {                                                    \
     NAME##_iFuncPtr = RESOLVER();                                              \
   }
 

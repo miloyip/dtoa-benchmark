@@ -1,0 +1,46 @@
+name: MinGW
+
+on:
+  pull_request:
+  push:
+    branches: mingw
+    paths-ignore:
+    - '.circleci/**'
+    - '.github/actions/spelling/**'
+    - 'docs/**'
+    - 'packages**'
+    - .cirrus.yml
+    - .clang-format
+    - .gitignore
+    - .travis.yml
+    - AUTHORS
+    - COPYRIGHT
+    - ChangeLog.md
+    - LICENSE
+    - README.md
+    - appveyor.yml
+
+jobs:
+  build:
+    runs-on: [windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Fetch tags
+      run: git fetch --unshallow --tags --prune --force
+    - name: Update mingw64
+      # wanna version >= 10.2
+      run: choco upgrade mingw -y --no-progress
+    - name: Configure
+      shell: bash
+      run: mkdir @build && cd @build && cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+    - name: Build
+      shell: bash
+      run: cd @build && cmake --build .
+    - name: Test
+      shell: bash
+      env:
+        GTEST_SHUFFLE: 1
+        GTEST_RUNTIME_LIMIT: 99
+        MALLOC_CHECK_: 7
+        MALLOC_PERTURB_: 42
+      run: cd @build && cmake --build . --target test || ctest --rerun-failed --output-on-failure

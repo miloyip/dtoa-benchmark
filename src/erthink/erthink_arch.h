@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,10 +34,20 @@
 #pragma warning(pop)
 #endif
 
-#if (UINTPTR_MAX > 0xffffFFFFul || ULONG_MAX > 0xffffFFFFul)
+#if (UINTPTR_MAX > 0xffffFFFFul || ULONG_MAX > 0xffffFFFFul) ||                \
+    defined(__LP64__)
 #define ERTHINK_ARCH64
+#define ERTHINK_ARCH_BITS 64
+#elif defined(__AVR__)
+#define ERTHINK_ARCH8
+#define ERTHINK_ARCH_BITS 8
+#elif defined(__MSP430__) || defined(__Z8000__) ||                             \
+    (defined(__SIZEOF_INT__) && __SIZEOF_INT__ < 4)
+#define ERTHINK_ARCH16
+#define ERTHINK_ARCH_BITS 16
 #else
 #define ERTHINK_ARCH32
+#define ERTHINK_ARCH_BITS 32
 #endif /* FPT_ARCH64/32 */
 
 #if defined(i386) || defined(__386) || defined(__i386) || defined(__i386__) || \
@@ -60,3 +70,17 @@
 #define __amd64__ 1
 #endif /* __amd64__ */
 #endif /* all x86 */
+
+#ifndef ERTHINK_NATIVE_U128_TYPE
+#if defined(__SIZEOF_INT128__) ||                                              \
+    (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
+#define ERTHINK_NATIVE_U128_TYPE __uint128_t
+#endif
+#endif /* ERTHINK_NATIVE_U128_TYPE */
+
+#ifndef ERTHINK_NATIVE_I128_TYPE
+#if defined(__SIZEOF_INT128__) ||                                              \
+    (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 128)
+#define ERTHINK_NATIVE_I128_TYPE __int128_t
+#endif
+#endif /* ERTHINK_NATIVE_I128_TYPE */

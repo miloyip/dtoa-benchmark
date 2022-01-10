@@ -29,9 +29,9 @@ artifacts:
 
 before_build:
 - git submodule sync
-- git fetch --tags --prune
+- git fetch --tags --prune --force
 - git submodule update --init --recursive
-- git submodule foreach --recursive git fetch --tags --prune
+- git submodule foreach --recursive git fetch --tags --prune --force
 - cmake --version
 
 build_script:

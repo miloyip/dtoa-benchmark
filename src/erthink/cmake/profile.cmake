@@ -1,4 +1,4 @@
-##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2021 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -13,9 +13,14 @@
 ##  limitations under the License.
 ##
 
-cmake_minimum_required(VERSION 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  cmake_minimum_required(VERSION 3.8.2)
+else()
+  cmake_minimum_required(VERSION 3.12)
+endif()
+
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.8.2)
+cmake_policy(VERSION ${CMAKE_MINIMUM_REQUIRED_VERSION})
 
 include(CheckLibraryExists)
 check_library_exists(gcov __gcov_flush "" HAVE_GCOV)

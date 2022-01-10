@@ -62,8 +62,8 @@ before_script: |
   fi
 
 script: |
-  git fetch --unshallow --tags --prune
-  git submodule foreach --recursive git fetch --unshallow --tags --prune
+  git fetch --unshallow --tags --prune --force
+  git submodule foreach --recursive git fetch --unshallow --tags --prune --force
   cmake --version
   if [ ! -s ./coverity_scan.sh ]; then
     cmake . && \

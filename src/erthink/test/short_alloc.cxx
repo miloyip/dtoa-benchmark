@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
  *  limitations under the License.
  */
 
-#include "testing.h"
+#include "testing.h++"
 
 #include "erthink_defs.h"
-#include "erthink_short_alloc.h"
+#include "erthink_short_alloc.h++"
 
 #if __GLIBC_PREREQ(2, 4)
 #include <malloc.h>
@@ -31,7 +31,7 @@
 
 template <std::size_t SIZE> struct Params {
   static cxx11_constexpr_var std::size_t area_size =
-      SIZE * alignof(std::max_align_t);
+      SIZE * alignof(erthink::max_align_t);
   using arena_NOoutlive_type = erthink::allocation_arena<false, area_size>;
   using alloc_NOoutlive_type = erthink::short_alloc<char, arena_NOoutlive_type>;
 
@@ -79,7 +79,7 @@ TYPED_TEST_P(ShortAlloc, stack_NOoutlive) {
 
     EXPECT_GE(area_size, arena->used());
     EXPECT_LE(area_size,
-              arena->used() + alignof(std::max_align_t) + item_size - 1);
+              arena->used() + alignof(erthink::max_align_t) + item_size - 1);
 
     while (!stack.empty()) {
       char *ptr = stack.top();
@@ -115,7 +115,7 @@ TYPED_TEST_P(ShortAlloc, fifo_NOoutlive) {
 
     EXPECT_GE(area_size, arena->used());
     EXPECT_LE(area_size,
-              arena->used() + alignof(std::max_align_t) + item_size - 1);
+              arena->used() + alignof(erthink::max_align_t) + item_size - 1);
 
     const std::size_t used_while_exhausted = arena->used();
     const bool single_allocation = fifo.size() < 2;
@@ -160,7 +160,7 @@ TYPED_TEST_P(ShortAlloc, stack_outlive) {
 
     EXPECT_GE(area_size, arena->used());
     EXPECT_LE(area_size,
-              arena->used() + alignof(std::max_align_t) + item_size - 1);
+              arena->used() + alignof(erthink::max_align_t) + item_size - 1);
 
     while (!stack.empty()) {
       char *ptr = stack.top();
@@ -200,7 +200,7 @@ TYPED_TEST_P(ShortAlloc, fifo_outlive) {
     EXPECT_EQ(max_used, arena->used());
     EXPECT_GE(area_size, arena->used());
     EXPECT_LE(area_size,
-              arena->used() + alignof(std::max_align_t) + item_size - 1);
+              arena->used() + alignof(erthink::max_align_t) + item_size - 1);
 
     const std::size_t n = fifo.size();
     while (!fifo.empty()) {

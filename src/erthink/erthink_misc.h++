@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,8 +45,8 @@ template <typename T> struct branchless_abs {
   cxx11_constexpr branchless_abs(const T value)
       : expanded_sign(signed_type(value) >>
                       (sizeof(signed_type) * CHAR_BIT - 1)),
-        unsigned_abs(unsigned_type((signed_type(value) + expanded_sign) ^
-                                   expanded_sign)) {
+        unsigned_abs((unsigned_type(value) + unsigned_type(expanded_sign)) ^
+                     unsigned_type(expanded_sign)) {
     static_assert(((INT32_MIN >> 5) >> 29) == -1,
                   "requires arithmetic shift with sign expansion");
   }

@@ -1,4 +1,4 @@
-##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2021 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -13,24 +13,15 @@
 ##  limitations under the License.
 ##
 
-cmake_minimum_required(VERSION 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  cmake_minimum_required(VERSION 3.8.2)
+else()
+  cmake_minimum_required(VERSION 3.12)
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
   cmake_policy(PUSH)
-  if(NOT DEFINED BUILD_GTEST)
-    set(BUILD_GTEST ON CACHE BOOL "Builds the googletest subproject")
-  endif()
-  if(NOT DEFINED BUILD_GMOCK)
-    set(BUILD_GMOCK OFF CACHE BOOL "Builds the googlemock subproject")
-  endif()
-  if(NOT DEFINED INSTALL_GTEST)
-    set(INSTALL_GTEST OFF CACHE BOOL "Enable installation of googletest")
-  endif()
-
-  if(NOT DEFINED GTEST_USE_VERSION)
-    set(GTEST_USE_VERSION "LAST_RELEASE")
-  endif()
-
   cmake_policy(SET CMP0042 NEW)
   cmake_policy(SET CMP0054 NEW)
   if(NOT CMAKE_VERSION VERSION_LESS 3.9)
@@ -41,12 +32,24 @@ if(BUILD_TESTING)
     cmake_policy(SET CMP0075 NEW)
   endif()
 
-  # Expected GTest was already found and/or pointed via ${gtest_root},
-  # otherwise will search at ${gtest_paths} locations, if defined or default ones.
-  find_package(GTest)
+  if(NOT GTEST_FOUND AND NOT (DEFINED BUILD_GTEST AND BUILD_GTEST))
+    # Expected GTest was already found and/or pointed via ${gtest_root},
+    # otherwise will search at ${gtest_paths} locations, if defined or default ones.
+    find_package(GTest)
+  endif()
 
   if(NOT GTEST_FOUND)
     message(STATUS "Lookup GoogleTest sources...")
+    if(NOT DEFINED BUILD_GTEST)
+      set(BUILD_GTEST ON CACHE BOOL "Builds the googletest subproject")
+    endif()
+    if(NOT DEFINED BUILD_GMOCK)
+      set(BUILD_GMOCK OFF CACHE BOOL "Builds the googlemock subproject")
+    endif()
+    if(NOT DEFINED INSTALL_GTEST)
+      set(INSTALL_GTEST OFF CACHE BOOL "Enable installation of googletest")
+    endif()
+
     if(NOT gtest_paths)
       if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
         set(gtest_paths
@@ -70,8 +73,9 @@ if(BUILD_TESTING)
     else()
       if(NOT DEFINED GTEST_USE_VERSION
           OR GTEST_USE_VERSION STREQUAL "master"
+          OR GTEST_USE_VERSION STREQUAL "main"
           OR GTEST_USE_VERSION STREQUAL "LAST_RELEASE")
-        set(GTEST_CLONE_TAG "master")
+        set(GTEST_CLONE_TAG "main")
       else()
         set(GTEST_CLONE_TAG "origin/${GTEST_USE_VERSION}")
       endif()
@@ -191,17 +195,22 @@ if(BUILD_TESTING)
           SKIP_BUILD_RPATH FALSE MACOSX_RPATH TRUE)
       endif()
 
-      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 local_HAS_CXX20)
-      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 local_HAS_CXX17)
-      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 local_HAS_CXX14)
       list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 local_HAS_CXX11)
-
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 local_HAS_CXX14)
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 local_HAS_CXX17)
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 local_HAS_CXX20)
+      list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_23 local_HAS_CXX23)
       if(NOT DEFINED GTEST_CXX_STANDARD)
         if(DEFINED CMAKE_CXX_STANDARD)
           set(GTEST_CXX_STANDARD ${CMAKE_CXX_STANDARD})
-        elseif(NOT local_HAS_CXX20 LESS 0 AND NOT "$ENV{COVERITY_UNSUPPORTED_COMPILER_INVOCATION}" STREQUAL "1")
+        elseif(NOT local_HAS_CXX23 LESS 0
+          AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12))
+            set(GTEST_CXX_STANDARD 23)
+        elseif(NOT local_HAS_CXX20 LESS 0
+            AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10))
           set(GTEST_CXX_STANDARD 20)
-        elseif(NOT local_HAS_CXX17 LESS 0)
+        elseif(NOT local_HAS_CXX17 LESS 0
+            AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5))
           set(GTEST_CXX_STANDARD 17)
         elseif(NOT local_HAS_CXX14 LESS 0)
           set(GTEST_CXX_STANDARD 14)

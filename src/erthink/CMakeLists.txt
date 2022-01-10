@@ -1,4 +1,4 @@
-##  Copyright (c) 2012-2020 Leonid Yuriev <leo@yuriev.ru>.
+##  Copyright (c) 2012-2021 Leonid Yuriev <leo@yuriev.ru>.
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -18,9 +18,14 @@
 ##  https://github.com/erthink/erthink
 ##
 
-cmake_minimum_required(VERSION 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  cmake_minimum_required(VERSION 3.8.2)
+else()
+  cmake_minimum_required(VERSION 3.12)
+endif()
+
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.8.2)
+cmake_policy(VERSION ${CMAKE_MINIMUM_REQUIRED_VERSION})
 if(NOT CMAKE_VERSION VERSION_LESS 3.12)
   cmake_policy(SET CMP0075 NEW)
 endif()
@@ -34,6 +39,7 @@ endif()
 
 if(DEFINED PROJECT_NAME)
   set(SUBPROJECT ON)
+  enable_language(CXX)
 else()
   set(SUBPROJECT OFF)
   project(erthink
@@ -79,16 +85,30 @@ if (MSVC)
   endif()
 endif()
 
-list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 HAS_CXX20)
-list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 HAS_CXX17)
-list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 HAS_CXX14)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/profile.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/std_thread.cmake")
+
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 HAS_CXX11)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 HAS_CXX14)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_17 HAS_CXX17)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 HAS_CXX20)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_23 HAS_CXX23)
 if(NOT DEFINED ERTHINK_CXX_STANDARD)
+  if(DEFINED ENV{CMAKE_CXX_STANDARD})
+    set(CMAKE_CXX_STANDARD $ENV{CMAKE_CXX_STANDARD})
+  endif()
   if(DEFINED CMAKE_CXX_STANDARD)
     set(ERTHINK_CXX_STANDARD ${CMAKE_CXX_STANDARD})
-  elseif(NOT HAS_CXX20 LESS 0 AND NOT "$ENV{COVERITY_UNSUPPORTED_COMPILER_INVOCATION}" STREQUAL "1")
+  elseif(NOT HAS_CXX23 LESS 0
+      AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12))
+    set(FPTA_CXX_STANDARD 23)
+  elseif(NOT HAS_CXX20 LESS 0
+      AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10))
     set(ERTHINK_CXX_STANDARD 20)
-  elseif(NOT HAS_CXX17 LESS 0)
+  elseif(NOT HAS_CXX17 LESS 0
+      AND NOT (CMAKE_COMPILER_IS_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5))
     set(ERTHINK_CXX_STANDARD 17)
   elseif(NOT HAS_CXX14 LESS 0)
     set(ERTHINK_CXX_STANDARD 14)
@@ -102,10 +122,6 @@ if(ERTHINK_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD ${ERTHINK_CXX_STANDARD})
   endif()
 endif()
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/profile.cmake")
 
 if(NOT SUBPROJECT)
   set(CMAKE_MACOSX_RPATH ON)
@@ -178,11 +194,11 @@ if(NOT SUBPROJECT)
 
   if(UNIX)
     find_program(CLANG_FORMAT
-      NAMES clang-format-12 clang-format-11 clang-format-10 clang-format)
+      NAMES clang-format-13 clang-format)
     if(CLANG_FORMAT)
       execute_process(COMMAND ${CLANG_FORMAT} "--version" OUTPUT_VARIABLE clang_format_version_info)
       string(REGEX MATCH "version ([0-9]+)\\.([0-9]+)\\.([0-9]+)(.*)?" clang_format_version_info CLANG_FORMAT_VERSION)
-      if(clang_format_version_info AND NOT CLANG_FORMAT_VERSION VERSION_LESS 10.0)
+      if(clang_format_version_info AND NOT CLANG_FORMAT_VERSION VERSION_LESS 13.0)
         # Enable 'make reformat' target.
         add_custom_target(reformat
           VERBATIM
@@ -218,14 +234,33 @@ endif(NOT SUBPROJECT)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
-add_library(erthink INTERFACE)
-
 set(erthink_HEADERS
-  erthink_arch.h erthink_bswap.h erthink_byteorder.h erthink_carryadd.h
-  erthink_casting.h erthink_clz.h erthink_d2a.h erthink_defs.h
-  erthink_dynamic_constexpr.h erthink_intrin.h erthink_misc.h erthink_mul.h
-  erthink_rot.h erthink_u2a.h erthink_optimize4size.h erthink_optimize4speed.h
-  erthink_short_alloc.h erthink_ifunc.h erthink_endian.h erthink.h)
+  erthink.h
+  erthink_128.h
+  erthink_arch.h
+  erthink_bswap.h
+  erthink_byteorder.h
+  erthink_carryadd.h
+  erthink_defs.h
+  erthink_intrin.h
+  erthink_ifunc.h
+  erthink_endian.h
+  erthink_mul.h
+  erthink_optimize4size.h
+  erthink_optimize4speed.h
+
+  erthink.h++
+  erthink_casting.h++
+  erthink_clz.h++
+  erthink_constexpr_cstr.h++
+  erthink_d2a.h++
+  erthink_dynamic_constexpr.h++
+  erthink_misc.h++
+  erthink_rot.h++
+  erthink_u2a.h++
+  erthink_short_alloc.h++
+)
+add_library(erthink INTERFACE)
 
 if(ERTHINK_CXX_STANDARD)
   target_compile_features(erthink INTERFACE "cxx_std_${ERTHINK_CXX_STANDARD}")

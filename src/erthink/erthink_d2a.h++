@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,12 +42,12 @@
 #endif
 
 #include "erthink_carryadd.h"
-#include "erthink_casting.h"
-#include "erthink_clz.h"
+#include "erthink_casting.h++"
+#include "erthink_clz.h++"
 #include "erthink_defs.h"
-#include "erthink_misc.h"
+#include "erthink_misc.h++"
 #include "erthink_mul.h"
-#include "erthink_u2a.h"
+#include "erthink_u2a.h++"
 
 #ifdef _MSC_VER
 #pragma warning(push, 1)
@@ -176,11 +176,12 @@ struct diy_fp {
       const int gap = /* avoid underflow of (upper_bound - lower_bound) */ 3;
       const int shift = clz64(value) - gap;
       cxx11_constexpr_var uint64_t top = UINT64_MAX >> gap;
-      const uint64_t rounding = UINT64_C(1) << (1 - shift);
-      value =
-          (shift >= 0)
-              ? value << shift
-              : ((value < top - rounding) ? value + rounding : top) >> -shift;
+      if (shift >= 0)
+        value = value << shift;
+      else {
+        const uint64_t rounding = UINT64_C(1) << (1 - shift);
+        value = ((value < top - rounding) ? value + rounding : top) >> -shift;
+      }
       assert(top >= value && value > 0);
       return diy_fp(value, exp2 - shift);
     }
@@ -528,8 +529,9 @@ inline void convert(PRINTER &printer, const double &value) cxx11_noexcept {
   return convert(printer, diy_fp(i64));
 }
 
-template <bool accurate> struct ieee754_default_printer {
-  enum { max_chars = 23 };
+template <bool accurate, unsigned DERIVED_PRINTERS__MAX_CHARS = 23>
+struct ieee754_default_printer {
+  enum { max_chars = DERIVED_PRINTERS__MAX_CHARS };
   char *end;
   char *begin;
 
@@ -683,9 +685,8 @@ struct shodan_printer : public ieee754_default_printer<accurate> {
 };
 
 // designed to printing fractional part of a fixed-point value
-struct fractional_printer : public ieee754_default_printer<true> {
+struct fractional_printer : public ieee754_default_printer<true, 32> {
   using inherited = ieee754_default_printer;
-  enum { max_chars = 32 };
 
   fractional_printer(char *buffer_begin, char *buffer_end) cxx11_noexcept
       : inherited(buffer_begin, buffer_end) {
@@ -694,7 +695,7 @@ struct fractional_printer : public ieee754_default_printer<true> {
   }
 
   void sign(bool negative) cxx11_noexcept {
-    constexpr_assert(!negative);
+    assert(!negative);
     (void)negative;
   }
 
@@ -706,6 +707,7 @@ struct fractional_printer : public ieee754_default_printer<true> {
     assert(zero_needed >= 0 && zero_needed < max_chars - 1 - (end - first));
     if (zero_needed > 0) {
       memmove(first + zero_needed, first, size_t(end - first));
+      // coverity[bad_memset : FALSE]
       memset(first, '0', size_t(zero_needed));
       end += zero_needed;
     } else {
@@ -713,10 +715,25 @@ struct fractional_printer : public ieee754_default_printer<true> {
         --end;
     }
   }
+};
 
-  std::pair<char *, char *> finalize_and_get() cxx11_noexcept {
-    assert(end > begin && begin + max_chars >= end);
-    return std::make_pair(begin, end);
+template <bool accurate = false>
+struct json5_printer : public ieee754_default_printer<accurate> {
+  using inherited = ieee754_default_printer<accurate>;
+
+  json5_printer(char *buffer_begin, char *buffer_end) cxx11_noexcept
+      : inherited(buffer_begin, buffer_end) {}
+
+  void nan() cxx11_noexcept {
+    // assumes compiler optimize-out memcpy() with small fixed length
+    std::memcpy(inherited::end, "NaN", 4);
+    inherited::end += 3;
+  }
+
+  void inf() cxx11_noexcept {
+    // assumes compiler optimize-out memcpy() with small fixed length
+    std::memcpy(inherited::end, "Infinity", 8);
+    inherited::end += 8;
   }
 };
 
@@ -724,7 +741,7 @@ struct fractional_printer : public ieee754_default_printer<true> {
 
 enum { d2a_max_chars = grisu::ieee754_default_printer<false>::max_chars };
 
-template <bool accurate>
+template <class PRINTER = grisu::ieee754_default_printer<false>>
 /* The "accurate" controls the trade-off between conversion speed and accuracy:
  *
  *  - True: accurately conversion to impeccable string representation,
@@ -738,8 +755,7 @@ char *
 d2a(const double &value,
     char *const
         buffer /* upto erthink::d2a_max_chars for -22250738585072014e-324 */) {
-  grisu::ieee754_default_printer<accurate> printer(
-      buffer, buffer + grisu::ieee754_default_printer<accurate>::max_chars);
+  PRINTER printer(buffer, buffer + PRINTER::max_chars);
   grisu::convert(printer, value);
   return printer.finalize_and_get().second;
 }
@@ -747,13 +763,13 @@ d2a(const double &value,
 static inline __maybe_unused char *d2a_accurate(
     const double &value,
     char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
-  return d2a<true>(value, buffer);
+  return d2a<grisu::ieee754_default_printer<true>>(value, buffer);
 }
 
 static inline __maybe_unused char *d2a_fast(
     const double &value,
     char *const buffer /* upto d2a_max_chars for -22250738585072014e-324 */) {
-  return d2a<false>(value, buffer);
+  return d2a<grisu::ieee754_default_printer<false>>(value, buffer);
 }
 
 template <bool accurate = true> struct output_double {
@@ -762,22 +778,151 @@ template <bool accurate = true> struct output_double {
   cxx11_constexpr output_double(const double value) : value(value) {}
 };
 
-} // namespace erthink
-
-namespace std {
-
-inline ostream &operator<<(ostream &out,
-                           const erthink::output_double<false> &it) {
+inline std::ostream &operator<<(std::ostream &out,
+                                const erthink::output_double<false> &it) {
   char buf[erthink::grisu::ieee754_default_printer<false>::max_chars];
   char *end = erthink::d2a_fast(it.value, buf);
   return out.write(buf, end - buf);
 }
 
-inline ostream &operator<<(ostream &out,
-                           const erthink::output_double<true> &it) {
+inline std::ostream &operator<<(std::ostream &out,
+                                const erthink::output_double<true> &it) {
   char buf[erthink::grisu::ieee754_default_printer<true>::max_chars];
   char *end = erthink::d2a_accurate(it.value, buf);
   return out.write(buf, end - buf);
 }
 
-} // namespace std
+template <typename T> class fpclassify {
+  const int std_fpclassify;
+  const bool negative;
+
+  constexpr fpclassify(const uint64_t) noexcept = delete;
+  constexpr fpclassify(const int64_t) noexcept = delete;
+  constexpr fpclassify(const uint32_t) noexcept = delete;
+  constexpr fpclassify(const int32_t) noexcept = delete;
+
+public:
+  constexpr fpclassify(const fpclassify &) noexcept = default;
+  explicit fpclassify(const T &value) noexcept
+      : std_fpclassify(::std::fpclassify(value)), negative(value < T(0)) {}
+
+  constexpr bool is_negative() const noexcept { return negative; }
+  constexpr bool is_zero() const noexcept { return std_fpclassify == FP_ZERO; }
+  constexpr bool is_finite() const noexcept {
+    return std_fpclassify != FP_INFINITE;
+  }
+  constexpr bool is_nan() const noexcept { return std_fpclassify == FP_NAN; }
+  constexpr bool is_infinity() const noexcept {
+    return std_fpclassify == FP_INFINITE;
+  }
+  constexpr bool is_normal() const noexcept {
+    return std_fpclassify == FP_NORMAL;
+  }
+  constexpr bool is_subnormal() const noexcept {
+    return std_fpclassify == FP_SUBNORMAL;
+  }
+  constexpr operator int() const noexcept { return std_fpclassify; }
+};
+
+template <> class fpclassify<float> {
+  using type = uint32_t;
+  const type value;
+
+  constexpr fpclassify(const uint64_t) noexcept = delete;
+  constexpr fpclassify(const int64_t) noexcept = delete;
+  constexpr fpclassify(const type value) noexcept : value(value) {}
+  constexpr fpclassify(const int32_t) noexcept = delete;
+
+public:
+  constexpr fpclassify(const fpclassify &) noexcept = default;
+  explicit fpclassify(const float src) noexcept : value(bit_cast<type>(src)) {}
+  friend constexpr fpclassify fpclassify_from_uint(const type value) noexcept;
+  constexpr bool is_negative() const noexcept {
+    return value > UINT32_C(0x7fffFFFF);
+  }
+  constexpr bool is_zero() const noexcept {
+    return (value & UINT32_C(0x7fffFFFF)) == 0;
+  }
+  constexpr bool is_finite() const noexcept {
+    return (value & UINT32_C(0x7fffFFFF)) < UINT32_C(0x7f800000);
+  }
+  constexpr bool is_nan() const noexcept {
+    return (value & UINT32_C(0x7fffFFFF)) > UINT32_C(0x7f800000);
+  }
+  constexpr bool is_infinity() const noexcept {
+    return (value & UINT32_C(0x7fffFFFF)) == UINT32_C(0x7f800000);
+  }
+  constexpr bool is_normal() const noexcept {
+    return is_finite() && (value & UINT32_C(0x7fffFFFF)) > UINT32_C(0x007fFFFF);
+  }
+  constexpr bool is_subnormal() const noexcept {
+    return is_finite() && (value & UINT32_C(0x7fffFFFF)) < UINT32_C(0x00800000);
+  }
+  constexpr operator int() const noexcept {
+    return likely(is_finite())
+               ? (likely(is_normal()) ? FP_NORMAL
+                                      : (is_zero() ? FP_ZERO : FP_SUBNORMAL))
+           : is_infinity() ? FP_INFINITE
+                           : FP_NAN;
+  }
+};
+
+constexpr fpclassify<float>
+fpclassify_from_uint(const uint32_t value) noexcept {
+  return fpclassify<float>(value);
+}
+
+template <> class fpclassify<double> {
+  using type = uint64_t;
+  const type value;
+
+  constexpr fpclassify(const type value) noexcept : value(value) {}
+  constexpr fpclassify(const int64_t) noexcept = delete;
+  constexpr fpclassify(const uint32_t) noexcept = delete;
+  constexpr fpclassify(const int32_t) noexcept = delete;
+
+public:
+  constexpr fpclassify(const fpclassify &) noexcept = default;
+  explicit fpclassify(const double src) noexcept : value(bit_cast<type>(src)) {}
+  friend constexpr fpclassify fpclassify_from_uint(const type value) noexcept;
+  constexpr bool is_negative() const noexcept {
+    return value > UINT64_C(0x7fffFFFFffffFFFF);
+  }
+  constexpr bool is_zero() const noexcept {
+    return (value & UINT64_C(0x7fffFFFFffffFFFF)) == 0;
+  }
+  constexpr bool is_finite() const noexcept {
+    return (value & UINT64_C(0x7fffFFFFffffFFFF)) <
+           UINT64_C(0x7ff0000000000000);
+  }
+  constexpr bool is_nan() const noexcept {
+    return (value & UINT64_C(0x7fffFFFFffffFFFF)) >
+           UINT64_C(0x7ff0000000000000);
+  }
+  constexpr bool is_infinity() const noexcept {
+    return (value & UINT64_C(0x7fffFFFFffffFFFF)) ==
+           UINT64_C(0x7ff0000000000000);
+  }
+  constexpr bool is_normal() const noexcept {
+    return is_finite() && (value & UINT64_C(0x7fffFFFFffffFFFF)) >
+                              UINT64_C(0x000fFFFFffffFFFF);
+  }
+  constexpr bool is_subnormal() const noexcept {
+    return is_finite() && (value & UINT64_C(0x7fffFFFFffffFFFF)) <
+                              UINT64_C(0x0010000000000000);
+  }
+  constexpr operator int() const noexcept {
+    return likely(is_finite())
+               ? (likely(is_normal()) ? FP_NORMAL
+                                      : (is_zero() ? FP_ZERO : FP_SUBNORMAL))
+           : is_infinity() ? FP_INFINITE
+                           : FP_NAN;
+  }
+};
+
+constexpr fpclassify<double>
+fpclassify_from_uint(const uint64_t value) noexcept {
+  return fpclassify<double>(value);
+}
+
+} // namespace erthink

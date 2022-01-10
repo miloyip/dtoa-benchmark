@@ -13,13 +13,13 @@ jobs:
       - checkout
       - run:
           command: |
-            git fetch--unshallow || true
-            git fetch --tags --prune
+            git fetch --unshallow || true
+            git fetch --tags --prune --force
 #      - run:
 #          command: |
 #            git submodule sync
 #            git submodule update --init --recursive
-#            git submodule foreach --recursive git fetch --tags --prune
+#            git submodule foreach --recursive git fetch --tags --prune --force
       - run:
           command: |
             c++ --version

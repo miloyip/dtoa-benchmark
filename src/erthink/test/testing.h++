@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,6 +49,11 @@
 
 #include <gtest/gtest.h>
 
+#ifndef GTEST_SKIP
+#define GTEST_SKIP()                                                           \
+  return GTEST_MESSAGE_("Skipped", ::testing::TestPartResult::kSuccess)
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -90,7 +95,7 @@ public:
       if (last_reported != current) {
         last_reported = current;
         std::cout << "[  SKIPPED ] RUNTIME_LIMIT was reached" << std::endl;
-        GTEST_SUCCESS_("Skipped") << "SKIPPEND by RUNTIME_LIMIT";
+        GTEST_SKIP() << "SKIPPEND by RUNTIME_LIMIT", true;
       }
       return true;
     }

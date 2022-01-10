@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,6 @@
 
 #pragma once
 
-#if !defined(__cplusplus) || __cplusplus < 201103L
-#error "This source code requires C++11 at least."
-#endif
-
 #include "erthink_arch.h"
 #include "erthink_carryadd.h"
 #include "erthink_defs.h"
@@ -36,7 +32,7 @@ namespace erthink {
 #define mul_64x64_high(a, b) __builtin_e2k_umulhd(a, b)
 #endif /* __e2k__ Elbrus && __iset__ >= 3 */
 
-#if !defined(__clang__)
+#if defined(_MSC_VER) && !defined(__clang__)
 
 #if defined(_M_X64) || defined(_M_IA64) || defined(_M_AMD64)
 #pragma intrinsic(_umul128)

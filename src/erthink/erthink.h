@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1994-2020 Leonid Yuriev <leo@yuriev.ru>.
+ *  Copyright (c) 1994-2021 Leonid Yuriev <leo@yuriev.ru>.
  *  https://github.com/erthink/erthink
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@
 #endif
 
 /* C and C++ */
+#include "erthink_128.h"
 #include "erthink_arch.h"
 #include "erthink_bswap.h"
 #include "erthink_byteorder.h"
@@ -32,20 +33,7 @@
 #include "erthink_ifunc.h"
 #include "erthink_intrin.h"
 #include "erthink_mul.h"
-#include "erthink_optimize4size.h"
-#include "erthink_optimize4speed.h"
 #include "erthink_rot.h"
-
-#if defined(__cplusplus) && __cplusplus >= 201103L
-/* C++11/14/17/20 */
-#include "erthink_casting.h"
-#include "erthink_clz.h"
-#include "erthink_d2a.h"
-#include "erthink_dynamic_constexpr.h"
-#include "erthink_misc.h"
-#include "erthink_short_alloc.h"
-#include "erthink_u2a.h"
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(pop)
